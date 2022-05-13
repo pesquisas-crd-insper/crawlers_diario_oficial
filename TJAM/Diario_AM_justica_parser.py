@@ -29,7 +29,7 @@ def sep_representante(public):
 	# print(public)
 
 	oab_compile = re.compile("\d{3,10}(?:[A-Z]/|/.|/|[A-Z]/.)[A-Z][A-Z]")
-	oab_comp = oab_compile.findall(public)
+	oab_comp = oab_compile.findall(text_ajust)
 	# print(len(oab_comp))
 	# z=input("")
 	if len(oab_comp) > 0:
@@ -220,16 +220,6 @@ def Separar_textos_paginas(ano):
 	pastas = os.listdir(diret)
 
 
-	# prepara as listas com os valores a serem usados
-	numeros_paginas =[]
-	nome_doc = []
-	nomes_pastas =[]
-	vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
-	txt_unific = []
-	sem_lines = []
-
-	## lista para verificar as flags escolhidas
-	caracteristicas =[]
 
 
 	# iteração sobre os arquivos dentro das pastas
@@ -237,6 +227,19 @@ def Separar_textos_paginas(ano):
 	for b in tqdm(range(len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
+		
+
+		# prepara as listas com os valores a serem usados
+		numeros_paginas =[]
+		nome_doc = []
+		nomes_pastas =[]
+		vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
+		txt_unific = []
+		sem_lines = []
+
+		## lista para verificar as flags escolhidas
+		caracteristicas =[]
+		
 		for a in range(len(arquivos)):
 			print(arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
@@ -315,31 +318,31 @@ def Separar_textos_paginas(ano):
 							sem_lines.append(blocks[o]["number"])
 
 
-	## contabilização da quantidade de flags mais frequentes
-							
-	# nome_acao = pd.DataFrame()
-	# nome_acao["Ação"] = caracteristicas							
-	# nome_acao = pd.DataFrame(nome_acao.groupby(["Ação"])["Ação"].count())
-	# nome_acao.columns = ["quantidade"]
-	# nome_acao = nome_acao.reset_index()						
+			## contabilização da quantidade de flags mais frequentes
+									
+			# nome_acao = pd.DataFrame()
+			# nome_acao["Ação"] = caracteristicas							
+			# nome_acao = pd.DataFrame(nome_acao.groupby(["Ação"])["Ação"].count())
+			# nome_acao.columns = ["quantidade"]
+			# nome_acao = nome_acao.reset_index()						
 
-	# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
-	# z = input("")
+			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
+			# z = input("")
 
 
-	# função que faz a junção dos blocos com base no valor do parágrafo
-	# print("Temos",len(txt_unific),"publicações")
+			# função que faz a junção dos blocos com base no valor do parágrafo
+			# print("Temos",len(txt_unific),"publicações")
 
-	Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano)								
-	
-	# retorna as listas (antes de fazer a junção)
-	# return numeros_paginas, nome_doc, nomes_pastas, vlrs_unific, txt_unific
+			Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,a)								
+			
+			# retorna as listas (antes de fazer a junção)
+			# return numeros_paginas, nome_doc, nomes_pastas, vlrs_unific, txt_unific
 	
 
 
 ###############################  Função para juntar os blocos dos textos ################################################
 
-def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano):
+def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq):
 
 
 	publicacoes = []
@@ -452,21 +455,22 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano):
 	df_textos_paginas["mes"] = frag[1]
 	df_textos_paginas["ano"] = frag[2]
 
-	df_textos_paginas["data_decisao"] = ""
-	df_textos_paginas["orgao_julgador"] = ""
+	df_textos_paginas["data_decisao"] = None
+	df_textos_paginas["orgao_julgador"] = None
+	df_textos_paginas["tipo_publicacao"] = None
 
 	df_textos_paginas = df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais", "assuntos","comarcas",
-	"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador"]]
+	"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
 
 	# gera o excel com o DF final
 
-	df_textos_paginas.to_excel("Diarios_publicacoes_AM_"+ano+".xlsx", index = False)
+	df_textos_paginas.to_excel("Diarios_publicacoes_AM_"+str(nome_pst[0])+'_'+str(num_arq)+".xlsx", index = False)
 
 	# converte para JSON
 
 	result = df_textos_paginas.to_json(orient="records", force_ascii = False)
 	parsed = json.loads(result)
-	with open('data_AM_'+ano+'.json', 'w', encoding ='utf-8') as fp:
+	with open('data_AM_'+str(nome_pst[0])+'_'+str(num_arq)+'.json', 'w', encoding ='utf-8') as fp:
 		json.dump(parsed, fp)
 
 	# time.sleep(5)	
@@ -482,8 +486,14 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano):
 ################################################################################################################
 
 def main():
+	
+	ini = time.time()
 	ano = input("Digite o ano com 4 dígitos (Ex:2012):")
 	data_frames = Separar_textos_paginas(ano)
+	fim = time.time()
+	tempo_total = (fim-ini)//60 #calcula o tempo decorrido
+	print("O tempo de execução foi aproximadamente =", tempo_total,"minutos")
+
 
 ################################################################################################################
 

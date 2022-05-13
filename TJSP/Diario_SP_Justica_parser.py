@@ -84,154 +84,44 @@ def sep_representante(public):
 	return oabs
 
 
-############################## função para classificar os tipos processuais e as comarcas ####################################################
-
-	
-def classificacao_quali(planilha):
-
-	termos = pd.read_excel("Termos_limpos_dicionario.xlsx", engine ='openpyxl')
-	
-	# print("a planinha tem",len(planilha["publicacoes"]),"\n")
-
-	comarcas = []
-	tipos_proces =[]
-	oabs =[]
-	total = 0
-
-	for public,num,est in tqdm(zip(planilha["publicacao"],planilha["numero_processo"],planilha["estado"])):
-		
-		
-		###### parte de verificar os tipos processuais 
-		try:	
-			publis = public.replace("\n","") # eliminar as quebras de linhas para pontecializar o regex
-			# procurar apenas no começo da publicação
-
-			if len(publis) <= 1000: # se a publicação tiver até 1000 caracteres, procura no texto todo
-				publis = publis
-				# public_pt_final = publis 
-			else:	
-				vlr = int(len(publis)*0.10)
-				if vlr < 350: # se tiver mais de mil até 3500, procura nos 350 primeiro caracteres
-					vlr = 350
-				publis = publis[0:vlr] # fora isso, pesquisar nos 10% primeiros caracteres da publicação
-				# public_pt_final = publis[vlr:] # ou nos 10% no caso da variável da data da decisão
-
-			tipo = "" # tipo recebe valor em branco
-
-			# itera sobre o dicionário de tipos processuais
-			for n in range(len(termos["termos_processuais"])):
-				rgx = termos ["termos_processuais"][n]
-				rgx = rgx.replace("\n","") #elimina eventuais quebras de linhas no regex tbem
-				
-				# tenta encontrar o tipo na publicação
-				try:
-					if re.search(rgx, publis, re.IGNORECASE): 
-						tipo = re.search(rgx, publis, re.IGNORECASE).group()
-						tipo = tipo.lower() # se encontrar normaliza para minúscula e grava na variável
-						# print(tipo)
-						break
-				except:
-					pass		
-
-			# junta o a variável tipo na lista		
-			tipos_proces.append(tipo)
-			if tipo =="": # contabiliza as que não encontrou
-				total = total+1
-
-		# em caso de erro também insere o vazio 
-		except:
-			tipo = ""
-			tipos_proces.append(tipo)
-			total = total+1	
-
-
-	########### Parte de inserir a comarca
-		try:
-			# recebe o código e o Estado
-			codigo = num[-4:]
-			estado = est
-			array_estado = Comarcas(estado) # retorna o array do Estado na função
-
-			# itera no array do Estado até achar o código da comarca, caso não encontre insere o vazio por default
-			for k in range(len(array_estado)):
-				comarca = ""
-				if array_estado[k][0] == codigo:
-					comarca = array_estado[k][2]
-					break
-			comarcas.append(comarca)
-
-		# em caso de algum erro insere o vazio
-		except:
-			comarca = ""
-			comarcas.append(comarca)
-
-		####### parte de buscar os advogados
-
-		oab = sep_representante(public)
-		oabs.append(oab) 
-
-	
-	# print("Temos",total, "não classificados.\n O total é",len(planilha["publicacoes"]),
-	# 	"\n o percentual é",(total*100)/len(planilha["publicacoes"]))
-
-
-	planilha ["tipos_processuais"] = tipos_proces
-	planilha["comarcas"] = comarcas
-	planilha["representantes"] = oabs
-
-	return planilha
-
-
 ############################################### # função que separa os textos dos PDF em páginas ######################################
 
-def Separar_textos_paginas(ano):
+def Separar_textos_paginas(nome_pasta,arquivos,pasta_dia):
 
-
-	# diretório
-	diret = r'./Diarios_SP_'+ano
-
-
-	# iteração sobre as páginas
-	pastas = os.listdir(diret)
-
+		
 	# lista onde os DF serão armazenados
 	data_frames=[]	
+	
+	for a in range(len(arquivos)):
+		print(arquivos[a])
+		nome = os.path.join(nome_pasta, arquivos[a])
+
+		# listas que armazenarão os dados básicos 
+		textos_paginas =[]
+		numeros_paginas =[]
+		nome_doc = []
+		nomes_pastas =[]
 
 
-	# iteração sobre as patas e os arquivos
-	for b in tqdm(range(len(pastas))):
-		nome_pasta = os.path.join(diret, pastas[b])
-		arquivos = os.listdir(nome_pasta)
-		for a in range(len(arquivos)):
-			print(arquivos[a])
-			nome = os.path.join(nome_pasta, arquivos[a])
+		# iteração sobre os pdf e as suas respectivas páginas coletando os dados
+		with fitz.open(nome) as pdf:
+		    num_pag = 1
+		    for pagina in pdf:
+		        texto = pagina.getText()
+		        textos_paginas.append(texto)
+		        numeros_paginas.append(num_pag)
+		        nome_doc.append(arquivos[a])
+		        nomes_pastas.append(pasta_dia)
+		        num_pag = num_pag+1
 
-			# listas que armazenarão os dados básicos 
-			textos_paginas =[]
-			numeros_paginas =[]
-			nome_doc = []
-			nomes_pastas =[]
+		# para cada PDF gera um DF armazenado na lista
+		    df_textos_paginas = pd.DataFrame()    
+		    df_textos_paginas["textos_paginas"] = textos_paginas
+		    df_textos_paginas["numeros_paginas"] = numeros_paginas
+		    df_textos_paginas["nome_documento"] = nome_doc
+		    df_textos_paginas["nomes_pastas"] = nomes_pastas
 
-
-			# iteração sobre os pdf e as suas respectivas páginas coletando os dados
-			with fitz.open(nome) as pdf:
-			    num_pag = 1
-			    for pagina in pdf:
-			        texto = pagina.getText()
-			        textos_paginas.append(texto)
-			        numeros_paginas.append(num_pag)
-			        nome_doc.append(arquivos[a])
-			        nomes_pastas.append(pastas[b])
-			        num_pag = num_pag+1
-
-			# para cada PDF gera um DF armazenado na lista
-			    df_textos_paginas = pd.DataFrame()    
-			    df_textos_paginas["textos_paginas"] = textos_paginas
-			    df_textos_paginas["numeros_paginas"] = numeros_paginas
-			    df_textos_paginas["nome_documento"] = nome_doc
-			    df_textos_paginas["nomes_pastas"] = nomes_pastas
-
-			    data_frames.append(df_textos_paginas)
+		    data_frames.append(df_textos_paginas)
 
 	
 	# print("temos",len(data_frames),"data Frames")
@@ -619,114 +509,81 @@ def Cortar_publicacoes(df_textos_paginas):
 
 def Main_Separacao(ano):
 
+	# diretório
+	diret = r'./Diarios_SP_'+ano
+
+
+	# iteração sobre as páginas
+	pastas = os.listdir(diret)
+
+
+
+	# iteração sobre as patas e os arquivos
+	for b in tqdm(range(len(pastas))):
+		
+		nome_pasta = os.path.join(diret, pastas[b])
+		arquivos = os.listdir(nome_pasta)
+
+		# Separar_textos_paginas()
+		data_frames = Separar_textos_paginas(nome_pasta,arquivos,pastas[b])
 	
-	# cria os DFs anteriores, que vão armazenas as planilhas de dados já existentes, se houver
-	anterior_certos = pd.DataFrame()
-	anterior_errados = pd.DataFrame()
+
+		# itera sobre os DF
+		for m in tqdm(range(len(data_frames))):
+			trechos_certos, numeros_certos, datas, numeros_paginas, docs_certos, paginas_erros, publis_erros, datas_erros, docs_errados, pastas,comarcas, tipos_proces, assuntos, oabs = Cortar_publicacoes(data_frames[m])
 
 
-	# Separar_textos_paginas()
-	data_frames = Separar_textos_paginas(ano)
-	
+			#criando o objeto dataframe
+			df_certos = pd.DataFrame()
+			r = pd.Series(numeros_certos)
+			y = pd.Series(trechos_certos)
+			x = pd.Series(numeros_paginas)
+			h = pd.Series(docs_certos)
+			i = pd.Series(pastas)
+			d = pd.Series(comarcas)
+			e = pd.Series(tipos_proces)
+			f = pd.Series(assuntos)
+			g = pd.Series(oabs)
+			
+			df_certos = pd.concat([r,y,x,h,i,d,e,f,g], axis=1,keys=["numero_processo","publicacao","numeros_paginas","nome_documento", "nomes_pastas",
+				"comarcas","tipos_processuais","assuntos","representantes"])
 
-	# itera sobre os DF
-	for m in tqdm(range(len(data_frames))):
-		trechos_certos, numeros_certos, datas, numeros_paginas, docs_certos, paginas_erros, publis_erros, datas_erros, docs_errados, pastas,comarcas, tipos_proces, assuntos, oabs = Cortar_publicacoes(data_frames[m])
+			# ajuste da data
 
+			frag = df_certos["nomes_pastas"].str.split("-", expand = True)
 
-		#criando o objeto dataframe
-		df_certos = pd.DataFrame()
-		r = pd.Series(numeros_certos)
-		y = pd.Series(trechos_certos)
-		x = pd.Series(numeros_paginas)
-		h = pd.Series(docs_certos)
-		i = pd.Series(pastas)
-		d = pd.Series(comarcas)
-		e = pd.Series(tipos_proces)
-		f = pd.Series(assuntos)
-		g = pd.Series(oabs)
-		
-		df_certos = pd.concat([r,y,x,h,i,d,e,f,g], axis=1,keys=["numero_processo","publicacao","numeros_paginas","nome_documento", "nomes_pastas",
-			"comarcas","tipos_processuais","assuntos","representantes"])
-
-		
-		# ajuste da data
-
-		frag = df_certos["nomes_pastas"].str.split("-", expand = True)
-
-		df_certos ["dia"] = frag[0]
-		df_certos ["mes"] = frag[1]
-		df_certos ["ano"] = frag[2]
-		df_certos ["estado"] = "SP"
-		# df_certos["instancia"] = np.where(df_certos["nome_documento"].str.contains("2ªInstancia"), "2ª Instancia", "1ª Instancia")
-
-		
+			df_certos ["dia"] = frag[0]
+			df_certos ["mes"] = frag[1]
+			df_certos ["ano"] = frag[2]
+			df_certos ["estado"] = "SP"
+			# df_certos["instancia"] = np.where(df_certos["nome_documento"].str.contains("2ªInstancia"), "2ª Instancia", "1ª Instancia")
 
 
-		############################# unfica os DF de planilhas antigas se eleas estiverem na mesma pasta do código
-		# faz para a lista de certas e de erradas
-		
-		if len(anterior_certos) > 1:
-			try:
-				anterior_certos = pd.concat([df_certos,anterior_certos])
-				# print("temos", len(anterior_certos), "certos")
-		
-			except:
-				anterior_certos.to_excel("Diarios_publicacoes.xlsx", index = False)
-				print("erro no DF", m)
-		else:
-			anterior_certos = df_certos	
+			################## fim do tratamento dos erros ################################	
 
 
 
-		## parte dos errados 
+			# anterior_certos = classificacao_quali(anterior_certos)
+			df_certos["data_decisao"] = None
+			df_certos["orgao_julgador"] = None
+			df_certos["tipo_publicacao"] = None
 
-		df_errados = pd.DataFrame()
-		r = pd.Series(paginas_erros)
-		y = pd.Series(publis_erros)
-		x = pd.Series(datas_erros)
-		g = pd.Series(docs_errados)
-		df_errados = pd.concat([r,y,x,g], axis=1,keys=["Numero da página","Publicação","Data","Nome do documento"])
-
-
-		if len(anterior_errados) > 1:
-			try:
-				anterior_errados = pd.concat([df_errados,anterior_errados])
-				# print("temos", len(anterior_errados), "errados")
-				
-			except:
-				anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)	
-
-		else:
-			anterior_errados = df_errados	
-
-
-		################## fim do tratamento dos erros ################################	
+			df_certos = df_certos[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais","assuntos","comarcas",
+			"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador", 'tipo_publicacao']]
 
 
 
-	# anterior_certos = classificacao_quali(anterior_certos)
-	anterior_certos["data_decisao"] = ""
-	anterior_certos["orgao_julgador"] = ""
+			# converte para JSON
 
-	anterior_certos = anterior_certos[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais","assuntos","comarcas",
-	"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador"]]
-
-	# gera o excel com o DF final
-
-	# df_textos_paginas.to_excel("Diarios_publicacoes_AM_"+ano+".xlsx", index = False)
-
-	# converte para JSON
-
-	result = anterior_certos.to_json(orient="records", force_ascii = False)
-	parsed = json.loads(result)
-	with open('data_SP_'+ano+'.json', 'w', encoding ='utf-8') as fp:
-		json.dump(parsed, fp)
+			result = df_certos.to_json(orient="records", force_ascii = False)
+			parsed = json.loads(result)
+			with open('data_SP_'+str(pastas[0])+"_"+str(m)+'.json', 'w', encoding ='utf-8') as fp:
+				json.dump(parsed, fp)
 
 
-	# transforma num excel
-	anterior_certos.to_excel("Diarios_publicacoes"+ano+".xlsx", index = False)
-	# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)		
+			# transforma num excel
+			df_certos.to_excel("Diarios_publicacoes_SP_"+str(pastas[0])+"_"+str(m)+".xlsx", index = False)
+			# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)		
 
 ################################################################
 
@@ -734,8 +591,15 @@ def Main_Separacao(ano):
 
 
 def main():
+	
+	ini = time.time()
 	ano = input("Digite o ano com 4 dígitos (Ex:2012):")
-	Main_Separacao(ano)
+	data_frames = Main_Separacao(ano)
+	fim = time.time()
+	tempo_total = (fim-ini)//60 #calcula o tempo decorrido
+	print("O tempo de execução foi aproximadamente =", tempo_total,"minutos")
+
+	
 
 ################################################################################################################
 
