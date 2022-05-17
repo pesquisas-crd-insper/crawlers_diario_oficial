@@ -107,7 +107,7 @@ def Separar_textos_paginas(nome_pasta,arquivos,pasta_dia):
 		with fitz.open(nome) as pdf:
 		    num_pag = 1
 		    for pagina in pdf:
-		        texto = pagina.getText()
+		        texto = pagina.get_text()
 		        textos_paginas.append(texto)
 		        numeros_paginas.append(num_pag)
 		        nome_doc.append(arquivos[a])
@@ -170,12 +170,14 @@ def Cortar_publicacoes(df_textos_paginas):
 		pasta = str(pasta)
 
 
+		###################### versão anterior
+
 		# Encontra os padrões textuais dos números CNJ nas publicações e retorna esses números
 
-		numer = re.findall("\n(\d{1,3}\. Processo \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})", texto)
-		numer_2 = re.findall("(\nProcesso \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})", texto)
+		numer = re.findall("\n\d{1,3}\. Processo \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
+		numer_2 = re.findall("\nProcesso \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
 		numer_3 = re.findall("\nNº \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
-		numer_4 = re.findall("(\nProcesso: \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4})", texto)
+		numer_4 = re.findall("\nProcesso: \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
 		numer_5 = re.findall("\n\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}; Processo", texto)
 		numer_6 = re.findall("\nN° \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
 		numer_7 = re.findall("\nPROCESSO\s\n:\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
@@ -183,6 +185,8 @@ def Cortar_publicacoes(df_textos_paginas):
 		# unifica todos os números numa lista com todos os padrões
 		numeros = numer + numer_2 + numer_3 +numer_4 + numer_5 + numer_6 + numer_7
 
+		##########################################
+	
 
 		# encontra os numeros dos processos para fazer o corte de acordo com a posição inicial do caracter
 		# gera uma lista com a posição do caracter onde está cada número CNJ
@@ -194,7 +198,7 @@ def Cortar_publicacoes(df_textos_paginas):
 
 			# tratamento para o caso de termos dois números CNJ iguaus na mesma página, ele verifica a próxima posição
 			else:
-				num_caracter = texto.find(item,num_caracter+28,len(texto)) # por default são 28, porque é maior que um número CNJ
+				num_caracter = texto.find(item,num_caract[-1]+28,len(texto)) # por default são 28, porque é maior que um número CNJ
 				num_caract.append(num_caracter)
 
 
@@ -211,6 +215,7 @@ def Cortar_publicacoes(df_textos_paginas):
 
 		# transforma numa lista
 		num_caract = df_caract ["caracter"].to_list()
+
 
 
 		# gera a lista com os números dos caracteres para fazer os cortes e gera a lista com as publis separadas
@@ -293,7 +298,7 @@ def Cortar_publicacoes(df_textos_paginas):
 						else:
 							numeros_paginas.append(num_pag)
 
-						# insere os demais dados dessa publicação	
+						# insere os demais dados dessa publicação
 						trechos_certos.append(publis[o])
 						docs_certos.append(doc)
 						pastas.append(pasta)
@@ -392,6 +397,7 @@ def Cortar_publicacoes(df_textos_paginas):
 						publis_erros.append(publis[o])
 						print("publicação", o)
 						print("da página", num_pag)
+
 						paginas_erros.append(num_pag)
 						docs_errados.append(doc)
 						# z = input("verificar")
@@ -581,8 +587,8 @@ def Main_Separacao(ano):
 				json.dump(parsed, fp)
 
 
-			# transforma num excel
-			df_certos.to_excel("Diarios_publicacoes_SP_"+str(pastas[0])+"_"+str(m)+".xlsx", index = False)
+			# transforma num csv
+			df_certos.to_csv("Diarios_publicacoes_SP_"+str(pastas[0])+"_"+str(m)+".csv", index = False)
 			# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)		
 
 ################################################################
