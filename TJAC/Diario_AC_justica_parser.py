@@ -223,15 +223,21 @@ def Separar_textos_paginas(ano):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
 		
-		numeros_paginas =[]
-		nome_doc = []
-		nomes_pastas =[]
-		txt_unific = []
-		sem_lines = []
 		
 		for a in range(len(arquivos)):
+			numeros_paginas =[]
+			nome_doc = []
+			nomes_pastas =[]
+			txt_unific = []
+			sem_lines = []
+	
 			# print(arquivos[a])
+			# print(pastas[b])
+
 			nome = os.path.join(nome_pasta, arquivos[a])
+
+			# print(nome)
+			# z= input("")
 
 			# controle dos números das páginas
 			num_pag = 0
@@ -243,7 +249,11 @@ def Separar_textos_paginas(ano):
 
 					# separa o texto em blocos
 
-					blocks = pagina.getText("dict")['blocks']
+					# blocks = pagina.get_text()
+					# print(blocks)
+					# z= input("")
+
+					blocks = pagina.get_text("dict")['blocks']
 					
 
 					# para cada bloco, separa em linhas
@@ -285,15 +295,15 @@ def Separar_textos_paginas(ano):
 								txt_fim = " ".join(txt_block)
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
-								nomes_pastas.append(nome_pasta[-10:])
+								nomes_pastas.append(pastas[b])
 								nome_doc.append(arquivos[a])
 								
-							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
+							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade de itens da lista
 							else:
 								txt_fim = " "
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
-								nomes_pastas.append(nome_pasta[-10:])
+								nomes_pastas.append(pastas[b])
 								nome_doc.append(arquivos[a])
 								
 						# controle dos casos que não foram, sem utilidade exceto conferência
@@ -302,7 +312,12 @@ def Separar_textos_paginas(ano):
 							sem_lines.append(blocks[o]["number"])	
 
 
-
+			# print(numeros_paginas)
+			# print(nome_doc)
+			# print(nomes_pastas)
+			# print(txt_unific)
+			# # print(sem_lines)	
+			# z= input("")			
 			## contabilização da quantidade de flags mais frequentes
 								
 			# nome_acao = pd.DataFrame()
@@ -334,59 +349,141 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 	num_process =[]
 
 
-
+	control =0
 	for txt,num,doc,pst in zip(txt_unific,numeros_paginas,nome_doc,nomes_pastas):
 		
 		## regra da pesquisa do número CNJ dentro do texto da publicação
 
+		inici_txt = txt[:90]
+
+
 		if len(txt) <= 1000: # se a publicação tiver até 1000 caracteres, procura no texto todo
-			text = txt
+			text = txt.replace("\n",'')
 		else:	
 			vlr = int(len(txt)*0.10)
 			if vlr < 400: # se tiver mais de mil até 4000, procura nos 4000 primeiro caracteres
 				vlr = 400
-			text = txt[0:vlr] # fora isso, pesquisar nos 10% primeiros caracteres da publicação
-
-
-		## incício da busca
+			text = txt[0:vlr].replace("\n",'') # fora isso, pesquisar nos 10% primeiros caracteres da publicação
 
 		
-		if re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE.MULTILINE): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
-			nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE.MULTILINE).group().replace(" ","") # se encontrar o padrão completo, separa o número
-			num_process.append(nm_proc) # salva na lista
+		if re.search('Classe:|Acórdão n.º|Acórdão nº:|Nº \d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',inici_txt, re.IGNORECASE): # pesquisa o padrão na primeira linha da publicação
 			
+			try:
+				nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE).group().replace(" ","") # se encontrar o padrão completo, separa o número
+				# num_process.append(nm_proc) # salva na lista
+				# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
+				publicacoes.append(txt.strip()) 
+				num_pags.append(num)
+				nome_docs.append(doc)
+				nome_pst.append(pst)
+				control = 0
+			except:
 
-			# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
-			publicacoes.append(txt) 
-			num_pags.append(num)
-			nome_docs.append(doc)
-			nome_pst.append(pst)
-			
-	
-		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
-		else:
+				publicacoes.append(txt.strip()) 
+				num_pags.append(num)
+				nome_docs.append(doc)
+				nome_pst.append(pst)
+				control = 1
+				# print(txt)
+				# z= input("")
+
+
 		
-			if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
-				txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
-				del publicacoes[-1] # deleta da lista a publicação anterior
-				publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-					
+		else:	
+		
+			rgx = re.compile('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}')
+			numeracoes = rgx.findall(txt[:100])
+			
+			if len(numeracoes) > 1:
+				if len(publicacoes)>=1 and re.search("^Disponibilizado -",inici_txt,re.IGNORECASE) == None: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
+					txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+					del publicacoes[-1] # deleta da lista a publicação anterior
+					publicacoes.append(txt.strip()) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+						
+
+
 			else:
-				pass
+				if re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',txt[:60], re.IGNORECASE): # pesquisa o padrão na primeira linha da publicação
+					# nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',txt[:60], re.IGNORECASE).group().replace(" ","") # se encontrar o padrão completo, separa o número
+					# num_process.append(nm_proc) # salva na lista
+			
+
+					# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
+					publicacoes.append(txt.strip()) 
+					num_pags.append(num)
+					nome_docs.append(doc)
+					nome_pst.append(pst)
+					control = 0
+			
+				# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
+				else:
+					if re.search('ADV:',inici_txt, re.IGNORECASE): 
+						# print(txt)
+						publicacoes.append(txt.strip()) 
+						num_pags.append(num)
+						nome_docs.append(doc)
+						nome_pst.append(pst)
+						# z= input("")
+						control = 0
+
+
+					else:
+						if control == 1:
+							txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+							del publicacoes[-1] # deleta da lista a publicação anterior
+							publicacoes.append(txt.strip()) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+						else:
+							if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None:
+								txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+								del publicacoes[-1] # deleta da lista a publicação anterior
+								publicacoes.append(txt.strip()) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+										
+							else:
+								pass
+
 		
-		
+
+	eliminar =[]							
+	for n in range(len(publicacoes)):
+		try:
+			nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',publicacoes[n], re.IGNORECASE).group().replace(" ","") # se encontrar o padrão completo, separa o número
+			num_process.append(nm_proc) # salva na lista
+		except:
+			# print(n)
+			# print(publicacoes[n])
+			# print(num_pags[n])
+			# print('falhou')
+			# z= input("")
+			eliminar.append(n)
+
+	for item in eliminar:
+		del publicacoes[item]
+		del num_pags[item]
+		del nome_docs[item]
+		del nome_pst[item]
+
 
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
-	# qtdade = 0
-	# for item,num in zip(publicacoes,num_pags):
-	# 	qtdade = qtdade+1
-	# 	print("Quantidade avaliada:",qtdade)
-	# 	print("página", num)
-	# 	print(item)
-	# 	print("-----------------")
-	# 	z = input('')
+	qtdade = 0
+	for item,num in zip(publicacoes,num_pags):
+		qtdade = qtdade+1
+		print("Quantidade avaliada:",qtdade)
+		print("página", num)
+		print(item)
+		print("-----------------")
+		z = input('')
+
+
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
+
+	# print(len(num_process))
+	# print(len(publicacoes))
+	# print(len(num_pags))
+	# print(len(nome_docs))
+	# print(len(nome_pst))
+
+	# z=input("")
 
 
 	# gera o DF com as publicações e as demais informações
@@ -405,7 +502,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 	############ CONFERÊNCIA AMOSTRAL ALEATÓRIA - DESCOMENTAR CASO QUEIRA UMA AMOSTRA ALEATÓRIA DOS RECORTES  - APERTAR ENTER A CADA PUBLICAÇÃO
 
 
-	# # # agrupa por nome do documento
+	# # agrupa por nome do documento
 	# doc_agrup = pd.DataFrame(df_textos_paginas.groupby(["nome_documento"])["nome_documento"].count())
 	# doc_agrup.columns = ["quantidade"]
 	# doc_agrup = doc_agrup.reset_index()
@@ -415,15 +512,15 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 	# random.shuffle(lista_nomes_docs)
 
 
-	# # Gera uma amostra aleatória de X publicações por documento para facilitar a conferência
+	# Gera uma amostra aleatória de X publicações por documento para facilitar a conferência
 	# for docu in lista_nomes_docs :
 	# 	df_filter = df_textos_paginas["nome_documento"] == docu
 	# 	amostra_trib = df_textos_paginas[df_filter]
 
-	# 	amostra_trib = amostra_trib.sample(10)  # escolher a quantidade da amostra
-	# 	for pub,doc,pag in zip(amostra_trib["publicacoes"],amostra_trib["nome_documento"],amostra_trib["numeros_paginas"]):
+	# 	amostra_trib = amostra_trib.sample(30)  # escolher a quantidade da amostra
+	# 	for pub,doc,pag in zip(amostra_trib["publicacao"],amostra_trib["nome_documento"],amostra_trib["numeros_paginas"]):
 	# 		print("documento:\t",doc,"\nPágina:\t",pag,"\nTexto publicação:\n",pub,"\n--------------")
-	# 		z= input("")
+			# z= input("")
 
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
 
@@ -444,14 +541,14 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 
 	# gera o excel com o DF final
 
-	df_textos_paginas.to_excel("Diarios_publicacoes_AC_"+str(nome_pst[0])+'_'+str(num_arq)+".xlsx", index = False)
+	df_textos_paginas.to_csv("Diarios_publicacoes_AC_"+str(nome_pst[0])+'_'+str(num_arq)+".csv", index = False)
 
 	# converte para JSON
 
-	result = df_textos_paginas.to_json(orient="records", force_ascii = False)
-	parsed = json.loads(result)
-	with open('data_AC_'+str(nome_pst[0])+'_'+str(num_arq)+'.json', 'w', encoding ='utf-8') as fp:
-		json.dump(parsed, fp)
+	# result = df_textos_paginas.to_json(orient="records", force_ascii = False)
+	# parsed = json.loads(result)
+	# with open('data_AC_'+str(nome_pst[0])+'_'+str(num_arq)+'.json', 'w', encoding ='utf-8') as fp:
+	# 	json.dump(parsed, fp)
 
 
 	# time.sleep(5)	
