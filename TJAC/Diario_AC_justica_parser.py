@@ -250,11 +250,11 @@ def Separar_textos_paginas(ano):
 					# separa o texto em blocos
 
 					# blocks = pagina.get_text()
-					# print(blocks)
-					# z= input("")
 
 					blocks = pagina.get_text("dict")['blocks']
 					
+					# print(blocks)
+					# z= input("")
 
 					# para cada bloco, separa em linhas
 					for o in range(len(blocks)):
@@ -275,17 +275,24 @@ def Separar_textos_paginas(ano):
 									## para o teste previo de verificar as flags	
 									caracteristicas.append((tam,flag))
 
-
-									if tam == "8" and flag == "0": 
-										txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-								
+									ano_nm = int(ano)
+									if ano_nm > 2013:
+										if tam == "8" and flag == "0": 
+											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
+									
+									else:
+										# print("entrou aqui!")
+										# z= input("")
+										if tam == "7" and flag == "0": 
+											txt_block.append(u['text'].strip())
+									
 
 									## para verificar o que aparece nos padrões das flags
 							
-									# if tam == "5" and flag == "0":
+									# if tam == "5" and flag == "16":
 									# 	print("\n\n PADRÃO 2\n\n",u['text'])
-										# z = input("")
-									# # if tam == "9" and flag == "4":
+									# 	z = input("")
+									# if tam == "7" and flag == "16":
 									# 	print("\n\n PADRÃO 3\n\n",u['text'])	
 									# 	z = input("")
 							
@@ -293,6 +300,7 @@ def Separar_textos_paginas(ano):
 
 							if len(txt_block) > 0:
 								txt_fim = " ".join(txt_block)
+								txt_fim = txt_fim.replace("*","")
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
 								nomes_pastas.append(pastas[b])
@@ -301,6 +309,7 @@ def Separar_textos_paginas(ano):
 							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade de itens da lista
 							else:
 								txt_fim = " "
+								# txt_fim = txt_fim.replace("*","")
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
 								nomes_pastas.append(pastas[b])
@@ -318,11 +327,12 @@ def Separar_textos_paginas(ano):
 			# print(txt_unific)
 			# # print(sem_lines)	
 			# z= input("")			
+			
 			## contabilização da quantidade de flags mais frequentes
 								
 			# nome_acao = pd.DataFrame()
-			# nome_acao["Ação"] = caracteristicas							
-			# nome_acao = pd.DataFrame(nome_acao.groupby(["Ação"])["Ação"].count())
+			# nome_acao["caracteristicas"] = caracteristicas							
+			# nome_acao = pd.DataFrame(nome_acao.groupby(["caracteristicas"])["caracteristicas"].count())
 			# nome_acao.columns = ["quantidade"]
 			# nome_acao = nome_acao.reset_index()						
 
@@ -366,7 +376,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 			text = txt[0:vlr].replace("\n",'') # fora isso, pesquisar nos 10% primeiros caracteres da publicação
 
 		
-		if re.search('Classe:|Acórdão n.º|Acórdão nº:|Nº \d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',inici_txt, re.IGNORECASE): # pesquisa o padrão na primeira linha da publicação
+		if re.search('Classe:|Acórdão n.º|Acórdão nº:|Nº \d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|Classe :',inici_txt, re.IGNORECASE): # pesquisa o padrão na primeira linha da publicação
 			
 			try:
 				nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE).group().replace(" ","") # se encontrar o padrão completo, separa o número
