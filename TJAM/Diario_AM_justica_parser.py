@@ -236,6 +236,7 @@ def Separar_textos_paginas(ano):
 		vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
 		txt_unific = []
 		sem_lines = []
+		posicao = []
 
 		## lista para verificar as flags escolhidas
 		caracteristicas =[]
@@ -250,7 +251,10 @@ def Separar_textos_paginas(ano):
 			with fitz.open(nome) as pdf:
 				for pagina in pdf:
 					num_pag = num_pag + 1
-					blocks = pagina.getText("dict")['blocks'] # organiza o texto na forma de dict e separa nas seções do documento
+					blocks = pagina.get_text("dict")['blocks'] # organiza o texto na forma de dict e separa nas seções do documento
+
+					# print(blocks)
+					# z=input("")
 
 					# itera para cada seção
 
@@ -275,23 +279,37 @@ def Separar_textos_paginas(ano):
 
 									tam = str(u['size']).split(".")[0]
 									flag =str(u['flags'])
+									posic = str(u['bbox'][0]).split(".")[0]
+									posic = int(posic)
+									# print(posic)
+									# z=input("")
 
-									## para o teste previo de verificar as flags	
-									caracteristicas.append((tam,flag))
+									## para o teste previo de verificar as flags (com posição pq esse bot utiliza na junção)	
+									caracteristicas.append((tam,flag,posic))
+
+									# caracteristicas.append((tam,flag))
+
+									ano_nm = int(ano)
+
+									if ano_nm < 2020:
 									
-									if tam == "7" and flag == "4" or tam == "7" and flag =="20": 
-										txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-								
+										if tam == "7" and flag == "4" or tam == "7" and flag =="20": 
+											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
+									
+									else:
+										if tam == "8" and flag == "4": 
+											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
+									
 
 
-									## para verificar o que aparece nos padrões das flags
+									# para verificar o que aparece nos padrões das flags
 							
-									# if tam == "6" and flag == "4":
+									# if tam == "7" and flag == "4":
 									# 	print("\n\n PADRÃO 2\n\n",u['text'])
 									# 	z = input("")
-									# # if tam == "9" and flag == "4":
-									# 	print("\n\n PADRÃO 3\n\n",u['text'])	
-									# 	z = input("")
+									# if tam == "9" and flag == "4":
+										# print("\n\n PADRÃO 3\n\n",u['text'])	
+										# z = input("")
 									
 									
 							# unifica os blocos dos textos, salvando também os números das páginas, pastas e arquivos								
@@ -303,6 +321,10 @@ def Separar_textos_paginas(ano):
 								numeros_paginas.append(num_pag)
 								nomes_pastas.append(nome_pasta[-10:])
 								nome_doc.append(arquivos[a])
+								if posic < 300:
+									posicao.append("lado A")
+								else:
+									posicao.append("lado B")
 							
 							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
 							else:
@@ -311,6 +333,11 @@ def Separar_textos_paginas(ano):
 								numeros_paginas.append(num_pag)
 								nomes_pastas.append(nome_pasta[-10:])
 								nome_doc.append(arquivos[a])
+								if posic < 300:
+									posicao.append("lado A")
+								else:
+									posicao.append("lado B")
+							
 								
 						
 						# caso não tenha a seção lines salva nessa outra lista o número do bloco (sem utilidade)
@@ -327,13 +354,15 @@ def Separar_textos_paginas(ano):
 			# nome_acao = nome_acao.reset_index()						
 
 			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
+			# nome_acao.sort_values(by=['quantidade'],ascending=False, inplace= True)
+			# nome_acao.to_excel("valores_flags.xlsx", index = False)
 			# z = input("")
 
 
 			# função que faz a junção dos blocos com base no valor do parágrafo
 			# print("Temos",len(txt_unific),"publicações")
 
-			Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,a)								
+			Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano,a,posicao)								
 			
 			# retorna as listas (antes de fazer a junção)
 			# return numeros_paginas, nome_doc, nomes_pastas, vlrs_unific, txt_unific
@@ -342,7 +371,7 @@ def Separar_textos_paginas(ano):
 
 ###############################  Função para juntar os blocos dos textos ################################################
 
-def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq):
+def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq, posicao_publis):
 
 
 	publicacoes = []
@@ -350,13 +379,13 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 	nome_docs = []
 	nome_pst = []
 	num_process =[]
+	posicao_atual = []
 	
 
 
 	vlr_cort = 0
-	for txt,num,doc,pst in zip(txt_unific,numeros_paginas,nome_doc,nomes_pastas):
-		
-	
+	for txt,num,doc,pst,pos in zip(txt_unific,numeros_paginas,nome_doc,nomes_pastas,posicao_publis):
+
 		## regra da pesquisa do número CNJ dentro do texto da publicação
 
 		if len(txt) <= 1000: # se a publicação tiver até 1000 caracteres, procura no texto todo
@@ -381,31 +410,46 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 			num_pags.append(num)
 			nome_docs.append(doc)
 			nome_pst.append(pst)
+			posicao_atual.append(pos)
 			
 	
 		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
+
+		### se o bbox for do outro lado ele aceita uma...tenho que inserir esse atributo na característica
 		else:
-		
-			if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
-				txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
-				del publicacoes[-1] # deleta da lista a publicação anterior
-				publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-					
-			else:
+			try:
+				pag_anter = num_pags[-1]
+				pos_anter = posicao_atual[-1]
+				if num == pag_anter and pos_anter == pos:
+					pass
+				else:
+					if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None:
+						txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+						del publicacoes[-1] # deleta da lista a publicação anterior
+						publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+			except:
 				pass
+
+			# if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
+			# 	txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+			# 	del publicacoes[-1] # deleta da lista a publicação anterior
+			# 	publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+					
+			# else:
+			# 	pass
 		
 		
 
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
-	# qtdade = 0
-	# for item,num in zip(publicacoes,num_pags):
-	# 	qtdade = qtdade+1
-	# 	print("Quantidade avaliada:",qtdade)
-	# 	print("página", num)
-	# 	print(item)
-	# 	print("-----------------")
-	# 	z = input('')
+	qtdade = 0
+	for item,num,pos in zip(publicacoes,num_pags,posicao_atual):
+		qtdade = qtdade+1
+		print("Quantidade avaliada:",qtdade)
+		print("página", num,"posição",pos)
+		print(item)
+		print("-----------------")
+		z = input('')
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
 
 
