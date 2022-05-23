@@ -181,9 +181,13 @@ def Cortar_publicacoes(df_textos_paginas):
 		numer_5 = re.findall("\n\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}; Processo", texto)
 		numer_6 = re.findall("\nN° \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
 		numer_7 = re.findall("\nPROCESSO\s\n:\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
+		numer_8 = re.findall("\n\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}", texto)
+		numer_9 = re.findall("\nPROCESSO:\d{3}\.\d{2}\.\d{4}\.\d{5,8}", texto)
+		numer_10 = re.findall("\nProcesso nº.:.\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}",texto)
+
 
 		# unifica todos os números numa lista com todos os padrões
-		numeros = numer + numer_2 + numer_3 +numer_4 + numer_5 + numer_6 + numer_7
+		numeros = numer + numer_2 + numer_3 +numer_4 + numer_5 + numer_6 + numer_7 + numer_8 + numer_9+numer_10
 
 		##########################################
 	
@@ -285,9 +289,8 @@ def Cortar_publicacoes(df_textos_paginas):
 
 					try:
 						# separa o padrão CNJ
-						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}',trecho_publis).group()
 						# print(numer)
-						numeros_certos.append(numer) # insere o número
 						
 
 						# se for a primeira publicação da página e não for a primeira página
@@ -299,6 +302,7 @@ def Cortar_publicacoes(df_textos_paginas):
 							numeros_paginas.append(num_pag)
 
 						# insere os demais dados dessa publicação
+						numeros_certos.append(numer) # insere o número
 						trechos_certos.append(publis[o])
 						docs_certos.append(doc)
 						pastas.append(pasta)
@@ -406,15 +410,24 @@ def Cortar_publicacoes(df_textos_paginas):
 				# se for a última publicação da página, junta na variável continuação para depois ser ajustada no recorte
 				# caso ela exceda mais de uma página		
 				else:
-					continuacao = publis[o]
-					if len(publis) > 1:
-						num_pag_ant = num_pag
-					elif len(publis) == 1:
-						pass
+					if num_pag == len(qtdade_paginas) and o == len(publis)-1:
+						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+						numeros_certos.append(numer)	
+						numeros_paginas.append(num_pag_ant)
+						trechos_certos.append(publis[o])
+						docs_certos.append(doc)
+						pastas.append(pasta)
+
+					else:
+						continuacao = publis[o]
+						if len(publis) > 1:
+							num_pag_ant = num_pag
+						elif len(publis) == 1:
+							pass
 
 			# se for a última página já unifica diretamente, porque não terá a variável "continuação" nem publis cortadas
 			else:
-				numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+				numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}',trecho_publis).group()
 				numeros_certos.append(numer)	
 				numeros_paginas.append(num_pag_ant)
 				trechos_certos.append(publis[o])
@@ -565,7 +578,13 @@ def Main_Separacao(ano):
 			# df_certos["instancia"] = np.where(df_certos["nome_documento"].str.contains("2ªInstancia"), "2ª Instancia", "1ª Instancia")
 
 
-			################## fim do tratamento dos erros ################################	
+			# ajusta a última publicação que vem com o sumário
+
+			corte = re.split(r"(?i)SUM(A|Á)RIO", df_certos["publicacao"].iloc[-1])
+
+			df_certos["publicacao"].iloc[-1] = corte[0]
+
+			######################
 
 
 
@@ -579,17 +598,25 @@ def Main_Separacao(ano):
 
 
 
+			# cria o diretório
+
+			dir_path = str(os.path.dirname(os.path.realpath(__file__)))
+			path = dir_path + f'\Diarios_processados_csv_'+str(ano)
+			Path(path).mkdir(parents=True, exist_ok=True)
+	
+
+
 			# converte para JSON
 
-			result = df_certos.to_json(orient="records", force_ascii = False)
-			parsed = json.loads(result)
-			with open('data_SP_'+str(pastas[0])+"_"+str(m)+'.json', 'w', encoding ='utf-8') as fp:
-				json.dump(parsed, fp)
+			# result = df_certos.to_json(orient="records", force_ascii = False)
+			# parsed = json.loads(result)
+			# with open('data_SP_'+str(pastas[0])+"_"+str(m)+'.json', 'w', encoding ='utf-8') as fp:
+			# 	json.dump(parsed, fp)
 
 
 			# transforma num csv
-			df_certos.to_csv("Diarios_publicacoes_SP_"+str(pastas[0])+"_"+str(m)+".csv", index = False)
-			# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)		
+			df_certos.to_csv(path+"\Diarios_publicacoes_SP_"+str(df_certos["nomes_pastas"][0])+"_"+str(m)+".csv", index = False)
+			# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)			
 
 ################################################################
 

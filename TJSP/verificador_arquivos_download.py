@@ -35,6 +35,23 @@ from Diario_SP_justica_coleta import Baixar_diarios
 
 
 
+
+
+def eliminar_vazias(path):
+
+	cont = 0
+	for i in os.listdir(path): #lista os arquivos
+		nome = str(i)
+		if nome[-3:] == "pdf": # verifica os concluídos
+			cont = cont+1
+
+
+	if cont == 0:
+		return -1
+	else:
+		return 1	
+
+
 ## verifica a quantidade de arquivos pdf na pasta
 
 def verificar_quantidade_arq(path):
@@ -44,6 +61,7 @@ def verificar_quantidade_arq(path):
 		nome = str(i)
 		if nome[-3:] == "pdf": # verifica os concluídos
 			cont = cont+1
+
 
 	if cont < 5:
 		return -1
@@ -97,27 +115,33 @@ def Main_Separacao(ano):
 
 			# verificar a validade
 			validade = Verificar_validade(nome_pasta,arquivos,pastas[b])
-			if validade != 1:
-				data = data.replace("/","-")
-				ano_pasta = str(data[-4:])		
+			if validade != 1:		
 				dir_path = str(os.path.dirname(os.path.realpath(__file__)))
-				path = dir_path + f'\Diarios_SP_erradas_'+ano_pasta
+				path = dir_path + f'\Diarios_SP_erradas_'+str(ano)
 				Path(path).mkdir(parents=True, exist_ok=True)
 				shutil.move(nome_pasta,path)
-				datas.append(pastas[b])
+				
 
 
-		else:
-			data = pastas[b].replace("/","-")
-			ano_pasta = str(data[-4:])		
+		else:		
 			dir_path = str(os.path.dirname(os.path.realpath(__file__)))
-			path = dir_path + f'\Diarios_SP_erradas_'+ano_pasta
+			path = dir_path + f'\Diarios_SP_erradas_'+str(ano)
 			Path(path).mkdir(parents=True, exist_ok=True)
 			shutil.move(nome_pasta,path)
-			datas.append(data)
+			
 
+	dir_path = str(os.path.dirname(os.path.realpath(__file__)))		
+	datas = os.listdir(dir_path + f'\Diarios_SP_erradas_'+str(ano))		
 
 	Baixar_diarios(datas)
+
+	# iteração sobre as patas e os arquivos para eliminar as vazias
+	for c in tqdm(range(len(pastas))):
+		
+		nome_pasta = os.path.join(diret, pastas[c])
+		eliminar = eliminar_vazias(nome_pasta)
+		if eliminar == -1:
+			shutil.rmtree(nome_pasta)
 
 
 #inicia o processo

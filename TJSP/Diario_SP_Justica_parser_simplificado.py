@@ -29,9 +29,9 @@ from tqdm import tqdm
 # from PDF_diario import Baixar_diarios_ajuste
 import time
 import json
-from array_Estados import Comarcas
-from tipos_processuais import tipos_processuais
-from assuntos import assuntos_proc
+# from array_Estados import Comarcas
+# from tipos_processuais import tipos_processuais
+# from assuntos import assuntos_proc
 
 
 
@@ -93,6 +93,7 @@ def Separar_textos_paginas(nome_pasta,arquivos,pasta_dia):
 	data_frames=[]	
 	
 	for a in range(len(arquivos)):
+		print(nome_pasta)
 		print(arquivos[a])
 		nome = os.path.join(nome_pasta, arquivos[a])
 
@@ -181,9 +182,14 @@ def Cortar_publicacoes(df_textos_paginas):
 		numer_5 = re.findall("\n\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}; Processo", texto)
 		numer_6 = re.findall("\nN° \d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
 		numer_7 = re.findall("\nPROCESSO\s\n:\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}", texto)
+		numer_8 = re.findall("\n\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}", texto)
+		numer_9 = re.findall("\nPROCESSO:\d{3}\.\d{2}\.\d{4}\.\d{5,8}", texto)
+		numer_10 = re.findall("\nProcesso nº.:.\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}",texto)
+
+		
 
 		# unifica todos os números numa lista com todos os padrões
-		numeros = numer + numer_2 + numer_3 +numer_4 + numer_5 + numer_6 + numer_7
+		numeros = numer + numer_2 + numer_3 +numer_4 + numer_5 + numer_6 + numer_7 + numer_8 + numer_9+numer_10
 
 		##########################################
 	
@@ -278,17 +284,12 @@ def Cortar_publicacoes(df_textos_paginas):
 				# se não for a última publicação da página
 				if o != len(publis)-1:
 
-					# docum = open("txt_teste.txt", encoding="utf-8", errors ="ignore")
-					# trecho_publis = docum.read()
-					# print(trecho_publis)
-					# z = input("")
-
 					try:
 						# separa o padrão CNJ
-						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}',trecho_publis).group()
+
 						# print(numer)
-						numeros_certos.append(numer) # insere o número
-						
+		
 
 						# se for a primeira publicação da página e não for a primeira página
 						if o == 0 and num_pag != 1:
@@ -299,96 +300,10 @@ def Cortar_publicacoes(df_textos_paginas):
 							numeros_paginas.append(num_pag)
 
 						# insere os demais dados dessa publicação
+						numeros_certos.append(numer) # insere o número
 						trechos_certos.append(publis[o])
 						docs_certos.append(doc)
 						pastas.append(pasta)
-
-						# try:
-						# 	tipo = "" # tipo recebe valor em branco
-
-
-						# 	# itera sobre o dicionário de tipos processuais
-						# 	for n in range(len(termos)):
-						# 		rgx = termos [n]
-						# 		rgx = rgx.replace("\n","") #elimina eventuais quebras de linhas no regex tbem
-								
-						# 		# tenta encontrar o tipo na publicação
-						# 		try:
-						# 			if re.search(rgx, trecho_publis, re.IGNORECASE): 
-						# 				tipo = re.search(rgx, trecho_publis, re.IGNORECASE).group()
-						# 				tipo = tipo.lower() # se encontrar normaliza para minúscula e grava na variável
-						# 				# print(tipo)
-						# 				break
-						# 		except:
-						# 			pass
-
-						# 	# junta o a variável tipo na lista		
-						# 	tipos_proces.append(tipo.strip())
-							# z=input("")
-							
-
-						# # em caso de erro também insere o vazio 
-						# except:
-						# 	tipo = ""
-						# 	tipos_proces.append(tipo)
-							
-
-
-						# ########## assunto ##################	
-						# try:
-						# 	assunto = "" # tipo recebe valor em branco
-
-
-						# 	# itera sobre o dicionário de tipos processuais
-						# 	for l in range(len(assuntos_list)):
-						# 		rgx_as = assuntos_list[l]
-						# 		rgx_as = rgx_as.replace("\n","") #elimina eventuais quebras de linhas no regex tbem
-								
-						# 		# tenta encontrar o tipo na publicação
-						# 		try:
-						# 			if re.search(rgx_as, trecho_publis, re.IGNORECASE): 
-						# 				assunto = re.search(rgx_as, trecho_publis, re.IGNORECASE).group()
-						# 				assunto = assunto.lower() # se encontrar normaliza para minúscula e grava na variável
-						# 				# print(assunto,rgx_as, l)
-						# 				# z=input("")
-						# 				break
-						# 		except:
-						# 			pass
-
-						# 	# junta o a variável tipo na lista		
-						# 	assuntos.append(assunto)
-						
-
-						# # em caso de erro também insere o vazio 
-						# except:
-						# 	assunto = ""
-						# 	assuntos.append(assunto)
-						
-
-
-						# try:
-						# 	# recebe o código e o Estado
-						# 	codigo = numer[-4:]
-						# 	estado = "SP"
-						# 	array_estado = Comarcas(estado) # retorna o array do Estado na função
-
-						# 	# itera no array do Estado até achar o código da comarca, caso não encontre insere o vazio por default
-						# 	for k in range(len(array_estado)):
-						# 		comarca = ""
-						# 		if array_estado[k][0] == codigo:
-						# 			comarca = array_estado[k][2]
-						# 			break
-						# 	comarcas.append(comarca)
-
-						# # em caso de algum erro insere o vazio
-						# except:
-						# 	comarca = ""
-						# 	comarcas.append(comarca)
-
-						# ###### parte de buscar os advogados
-
-						# oab = sep_representante(publis[o])
-						# oabs.append(oab)
 						
 
 					## havendo algum erro acrescenta na planilha de publicações erradas para conferência posterior	
@@ -406,105 +321,29 @@ def Cortar_publicacoes(df_textos_paginas):
 				# se for a última publicação da página, junta na variável continuação para depois ser ajustada no recorte
 				# caso ela exceda mais de uma página		
 				else:
-					continuacao = publis[o]
-					if len(publis) > 1:
-						num_pag_ant = num_pag
-					elif len(publis) == 1:
-						pass
+					if num_pag == len(qtdade_paginas) and o == len(publis)-1:
+						numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+						numeros_certos.append(numer)	
+						numeros_paginas.append(num_pag_ant)
+						trechos_certos.append(publis[o])
+						docs_certos.append(doc)
+						pastas.append(pasta)
+
+					else:
+						continuacao = publis[o]
+						if len(publis) > 1:
+							num_pag_ant = num_pag
+						elif len(publis) == 1:
+							pass
 
 			# se for a última página já unifica diretamente, porque não terá a variável "continuação" nem publis cortadas
 			else:
-				numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',trecho_publis).group()
+				numer = re.search('\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}.\d{1,2}|\d{3}\.\d{2}\.\d{4}\.\d{5,8}',trecho_publis).group()
 				numeros_certos.append(numer)	
 				numeros_paginas.append(num_pag_ant)
 				trechos_certos.append(publis[o])
 				docs_certos.append(doc)
 				pastas.append(pasta)
-				try:
-					tipo = "" # tipo recebe valor em branco
-
-
-					# itera sobre o dicionário de tipos processuais
-					for n in range(len(termos)):
-						rgx = termos[n]
-						rgx = rgx.replace("\n","") #elimina eventuais quebras de linhas no regex tbem
-						
-						# tenta encontrar o tipo na publicação
-						try:
-							if re.search(rgx, trecho_publis, re.IGNORECASE): 
-								tipo = re.search(rgx, trecho_publis, re.IGNORECASE).group()
-								tipo = tipo.lower() # se encontrar normaliza para minúscula e grava na variável
-								# print(tipo)
-								break
-						except:
-							pass
-
-					# junta o a variável tipo na lista		
-					tipos_proces.append(tipo)
-
-
-				# em caso de erro também insere o vazio 
-				except:
-					tipo = ""
-					tipos_proces.append(tipo)
-				
-
-				########## assunto ##################	
-				try:
-					assunto = "" # tipo recebe valor em branco
-
-
-					# itera sobre o dicionário de tipos processuais
-					for l in range(len(assuntos_list)):
-						rgx_as = assuntos_list[l]
-						rgx_as = rgx_as.replace("\n","") #elimina eventuais quebras de linhas no regex tbem
-						
-						# tenta encontrar o tipo na publicação
-						try:
-							if re.search(rgx_as, trecho_publis, re.IGNORECASE): 
-								assunto = re.search(rgx_as, trecho_publis, re.IGNORECASE).group()
-								assunto = assunto.lower() # se encontrar normaliza para minúscula e grava na variável
-								# print(tipo)
-								break
-						except:
-							pass
-
-					# junta o a variável tipo na lista		
-					assuntos.append(assunto)
-				
-
-				# em caso de erro também insere o vazio 
-				except:
-					assunto = ""
-					assuntos.append(assunto)	
-
-
-				## comarcas
-
-				try:
-					# recebe o código e o Estado
-					codigo = numer[-4:]
-					estado = "SP"
-					array_estado = Comarcas(estado) # retorna o array do Estado na função
-
-					# itera no array do Estado até achar o código da comarca, caso não encontre insere o vazio por default
-					for k in range(len(array_estado)):
-						comarca = ""
-						if array_estado[k][0] == codigo:
-							comarca = array_estado[k][2]
-							break
-					comarcas.append(comarca)
-
-				# em caso de algum erro insere o vazio
-				except:
-					comarca = ""
-					comarcas.append(comarca)
-
-				####### parte de buscar os advogados
-
-				oab = sep_representante(publis[o])
-				oabs.append(oab)
-
 
 	# retorna a lista com os dados separados			
 	return trechos_certos, numeros_certos, datas, numeros_paginas, docs_certos, paginas_erros, publis_erros, datas_erros, docs_errados, pastas, comarcas, tipos_proces, assuntos, oabs
@@ -536,7 +375,7 @@ def Main_Separacao(ano):
 
 		# itera sobre os DF
 		for m in tqdm(range(len(data_frames))):
-			trechos_certos, numeros_certos, datas, numeros_paginas, docs_certos, paginas_erros, publis_erros, datas_erros, docs_errados, pastas,comarcas, tipos_proces, assuntos, oabs = Cortar_publicacoes(data_frames[m])
+			trechos_certos, numeros_certos, datas, numeros_paginas, docs_certos, paginas_erros, publis_erros, datas_erros, docs_errados, pasta_atual,comarcas, tipos_proces, assuntos, oabs = Cortar_publicacoes(data_frames[m])
 
 
 			#criando o objeto dataframe
@@ -545,7 +384,7 @@ def Main_Separacao(ano):
 			y = pd.Series(trechos_certos)
 			x = pd.Series(numeros_paginas)
 			h = pd.Series(docs_certos)
-			i = pd.Series(pastas)
+			i = pd.Series(pasta_atual)
 			d = pd.Series(comarcas)
 			e = pd.Series(tipos_proces)
 			f = pd.Series(assuntos)
@@ -564,12 +403,15 @@ def Main_Separacao(ano):
 			df_certos ["estado"] = "SP"
 			# df_certos["instancia"] = np.where(df_certos["nome_documento"].str.contains("2ªInstancia"), "2ª Instancia", "1ª Instancia")
 
+			# ajusta a última publicação que vem com o sumário
 
-			################## fim do tratamento dos erros ################################	
+			corte = re.split(r"(?i)SUM(A|Á)RIO", df_certos["publicacao"].iloc[-1])
 
+			df_certos["publicacao"].iloc[-1] = corte[0]
 
+			######################
+			
 
-			# anterior_certos = classificacao_quali(anterior_certos)
 			df_certos["data_decisao"] = None
 			df_certos["orgao_julgador"] = None
 			df_certos["tipo_publicacao"] = None
@@ -579,16 +421,15 @@ def Main_Separacao(ano):
 
 
 
-			# converte para JSON
+			# cria o diretório
 
-			# result = df_certos.to_json(orient="records", force_ascii = False)
-			# parsed = json.loads(result)
-			# with open('data_SP_'+str(pastas[0])+"_"+str(m)+'.json', 'w', encoding ='utf-8') as fp:
-			# 	json.dump(parsed, fp)
+			dir_path = str(os.path.dirname(os.path.realpath(__file__)))
+			path = dir_path + f'\Diarios_processados_csv_'+str(ano)
+			Path(path).mkdir(parents=True, exist_ok=True)
 
 
 			# transforma num csv
-			df_certos.to_csv("Diarios_publicacoes_SP_"+str(pastas[0])+"_"+str(m)+".csv", index = False)
+			df_certos.to_csv(path+"\Diarios_publicacoes_SP_"+str(df_certos["nomes_pastas"][0])+"_"+str(m)+".csv", index = False)
 			# anterior_errados.to_excel("Erros_publicacoes.xlsx", index = False)		
 
 ################################################################
