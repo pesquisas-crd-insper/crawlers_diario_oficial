@@ -19,6 +19,7 @@ import shutil
 import time
 import datetime
 from datetime import date
+from datetime import datetime
 from workalendar.america import Brazil
 import shutil
 from selenium.webdriver.support.ui import WebDriverWait
@@ -162,6 +163,13 @@ def Gera_dias_uteis():
 
 # Chama as funções
 
-datas = Gera_dias_uteis()			
-Baixar_diarios(datas)
+
+def main():
+	datas = Gera_dias_uteis()			
+	Baixar_diarios(datas)
+
+#################################
+
+if __name__ == "__main__":
+	main()
 
