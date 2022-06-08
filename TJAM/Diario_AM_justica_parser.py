@@ -10,6 +10,7 @@ import time
 from array_Estados import Comarcas
 from tipos_processuais import tipos_processuais
 from assuntos import assuntos_proc
+from pathlib import Path
 
 
 
@@ -288,17 +289,13 @@ def Separar_textos_paginas(ano):
 									caracteristicas.append((tam,flag,posic))
 
 									# caracteristicas.append((tam,flag))
-
-									ano_nm = int(ano)
-
-									if ano_nm < 2020:
+	
+									if tam == "7" and flag == "4" or tam == "7" and flag =="20" or tam == "8" and flag == "4": 
+										txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
 									
-										if tam == "7" and flag == "4" or tam == "7" and flag =="20": 
-											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-									
-									else:
-										if tam == "8" and flag == "4": 
-											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
+									# else:
+									# 	if tam == "8" and flag == "4": 
+									# 		txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
 									
 
 
@@ -388,22 +385,20 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 
 		## regra da pesquisa do número CNJ dentro do texto da publicação
 
-		if len(txt) <= 1000: # se a publicação tiver até 1000 caracteres, procura no texto todo
-			text = txt
-		else:	
-			vlr = int(len(txt)*0.10)
-			if vlr < 400: # se tiver mais de mil até 4000, procura nos 4000 primeiro caracteres
-				vlr = 400
-			text = txt[0:vlr] # fora isso, pesquisar nos 10% primeiros caracteres da publicação
+		text = txt[:260].replace("\n","")
+		# print(text)
 
+		## início da busca
 
 		## incício da busca
 
 		
-		if re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE.MULTILINE): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
-			nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',text, re.IGNORECASE.MULTILINE).group().replace(" ","") # se encontrar o padrão completo, separa o número
+		if re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{6}-\s*\d',text, re.IGNORECASE.MULTILINE): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
+			nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{6}-\s*\d',text, re.IGNORECASE.MULTILINE).group().replace(" ","") # se encontrar o padrão completo, separa o número
 			num_process.append(nm_proc) # salva na lista
-			
+			# print(nm_proc)
+			# print("*"*8)
+			# z = input("")
 
 			# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
 			publicacoes.append(txt) 
@@ -411,8 +406,8 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 			nome_docs.append(doc)
 			nome_pst.append(pst)
 			posicao_atual.append(pos)
-			
-	
+
+
 		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
 
 		### se o bbox for do outro lado ele aceita uma...tenho que inserir esse atributo na característica
@@ -430,26 +425,19 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 			except:
 				pass
 
-			# if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
-			# 	txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
-			# 	del publicacoes[-1] # deleta da lista a publicação anterior
-			# 	publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-					
-			# else:
-			# 	pass
 		
-		
+				
 
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
-	qtdade = 0
-	for item,num,pos in zip(publicacoes,num_pags,posicao_atual):
-		qtdade = qtdade+1
-		print("Quantidade avaliada:",qtdade)
-		print("página", num,"posição",pos)
-		print(item)
-		print("-----------------")
-		z = input('')
+	# qtdade = 0
+	# for item,num,pos in zip(publicacoes,num_pags,posicao_atual):
+	# 	qtdade = qtdade+1
+	# 	print("Quantidade avaliada:",qtdade)
+	# 	print("página", num,"posição",pos)
+	# 	print(item)
+	# 	print("-----------------")
+	# 	z = input('')
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
 
 
@@ -490,40 +478,56 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 	# 		z= input("")
 
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
+	if len(df_textos_paginas["nomes_pastas"]) == 0:
+		print("arquivo vazio!")
+		z = input("")
+	
+
+	else:	
+		df_textos_paginas = classificacao_quali(df_textos_paginas)
+
+		frag = df_textos_paginas["nomes_pastas"].str.split("-", n=2, expand = True)
+		df_textos_paginas["dia"] = frag[0]
+		df_textos_paginas["mes"] = frag[1]
+		df_textos_paginas["ano"] = frag[2]
+
+		df_textos_paginas["data_decisao"] = None
+		df_textos_paginas["orgao_julgador"] = None
+		df_textos_paginas["tipo_publicacao"] = None
+
+		df_textos_paginas = df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais", "assuntos","comarcas",
+		"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
 
 
-	df_textos_paginas = classificacao_quali(df_textos_paginas)
 
-	frag = df_textos_paginas["nomes_pastas"].str.split("-", n=2, expand = True)
-	df_textos_paginas["dia"] = frag[0]
-	df_textos_paginas["mes"] = frag[1]
-	df_textos_paginas["ano"] = frag[2]
+		dir_path = str(os.path.dirname(os.path.realpath(__file__)))
+		path = dir_path + f'\Diarios_processados_AM_csv_'+str(ano)
+		Path(path).mkdir(parents=True, exist_ok=True)
+		
 
-	df_textos_paginas["data_decisao"] = None
-	df_textos_paginas["orgao_julgador"] = None
-	df_textos_paginas["tipo_publicacao"] = None
 
-	df_textos_paginas = df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais", "assuntos","comarcas",
-	"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
+		df_textos_paginas.to_csv(path+"\Diarios_publicacoes_AM_"+str(df_textos_paginas["nomes_pastas"][0])+'_'+str(num_arq)+".csv", index = False)
 
-	# gera o excel com o DF final
+		time.sleep(0.5)
 
-	df_textos_paginas.to_excel("Diarios_publicacoes_AM_"+str(nome_pst[0])+'_'+str(num_arq)+".xlsx", index = False)
+		# gera o excel com o DF final
 
-	# converte para JSON
+		# df_textos_paginas.to_excel(path+"\Diarios_publicacoes_AM_"+str(df_textos_paginas["nomes_pastas"][0])+'_'+str(num_arq)+".xlsx", index = False)
 
-	result = df_textos_paginas.to_json(orient="records", force_ascii = False)
-	parsed = json.loads(result)
-	with open('data_AM_'+str(nome_pst[0])+'_'+str(num_arq)+'.json', 'w', encoding ='utf-8') as fp:
-		json.dump(parsed, fp)
+		# # converte para JSON
 
-	# time.sleep(5)	
+		# result = df_textos_paginas.to_json(orient="records", force_ascii = False)
+		# parsed = json.loads(result)
+		# with open('data_AM_'+str(nome_pst[0])+'_'+str(num_arq)+'.json', 'w', encoding ='utf-8') as fp:
+		# 	json.dump(parsed, fp)
 
-	# with open('data_AM.json', 'r', encoding ='utf-8') as fp:
-	# 	data = json.loads(fp.read())
-	# 	print(json.dumps(data, indent = 4, ensure_ascii=False))
+		# time.sleep(5)	
 
-	# print(json.dumps(parsed, ensure_ascii=False, indent=4)) 
+		# with open('data_AM.json', 'r', encoding ='utf-8') as fp:
+		# 	data = json.loads(fp.read())
+		# 	print(json.dumps(data, indent = 4, ensure_ascii=False))
+
+		# print(json.dumps(parsed, ensure_ascii=False, indent=4)) 
 
 
 

@@ -19,6 +19,7 @@ import shutil
 import time
 import datetime
 from datetime import date
+from datetime import datetime
 from workalendar.america import Brazil
 import shutil
 from selenium.webdriver.support.ui import WebDriverWait
@@ -189,4 +190,5 @@ def Main():
 #####################################################
 
 
-Main()
+if __name__ == "__main__":
+	Main()
