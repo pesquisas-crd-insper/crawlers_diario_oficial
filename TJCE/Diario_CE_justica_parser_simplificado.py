@@ -6,202 +6,10 @@ import os, re
 import fitz
 import random
 import json
-from array_Estados import Comarcas
-from tipos_processuais import tipos_processuais
-from assuntos import assuntos_proc
 import time
 from pathlib import Path
 
 
-############################## função para separar os representantes (AOB/Estado) ####################################################
-
-def sep_representante(public):
-
-	rgx_estad = "(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO|DP)"
-
-	# limpar o texto do ponto para separar melhor o número da OAB
-	text_ajust = public.replace(".","")
-	text_ajust = text_ajust.replace("\n","")
-	# print(text_ajust)
-
-
-	oabs = []
-	# print(public)
-
-	oab_compile = re.compile("\d{3,10}(?:[A-Z]/|/.|/|[A-Z]/.)[A-Z][A-Z]")
-	oab_comp = oab_compile.findall(text_ajust)
-	# print(len(oab_comp))
-	# z=input("")
-	if len(oab_comp) > 0:
-		for item in oab_comp:
-			oabs.append(item)
-	else:
-		partes = re.split("oab",text_ajust, flags=re.IGNORECASE)[1:]
-		# print(partes)
-		# z=input("")
-		for item in partes:
-			item = item.strip()
-			try:
-				# print("o item é:\n",item[:10],"\n ***************")
-				num_oab = re.findall('\d{3,10}',item[:14])
-				estado_oab = re.findall(rgx_estad,item[:14])
-				# print("a OAB é:",num_oab,"\nE o Estado é:",estado_oab,"\n ----------------")
-				oabs.append(str(num_oab[0]+"/"+estado_oab[0]))
-			except:
-				try:
-					# print("o item é:\n",item[:],"\n ***************")
-					num_oab = re.findall('\d{3,10}',item[:])
-					estado_oab = re.findall(rgx_estad,item[:])
-					# print("a OAB é:",num_oab,"\nE o Estado é:",estado_oab,"\n ----------------")		
-					oabs.append(str(num_oab[0]+"/"+estado_oab[0]))
-				except:
-					pass
-	
-
-	# print(oabs)
-	return oabs
-
-
-############################## função para classificar os tipos processuais e as comarcas ####################################################
-
-	
-def classificacao_quali(planilha):
-
-
-	comarcas = []
-	tipos_proces =[]
-	oabs =[]
-	assuntos =[]
-
-	# recebe as listas do arrays dos tipos processuais e dos assuntos
-
-	termos = tipos_processuais()
-	assuntos_list = assuntos_proc()
-
-	for public,num,est in tqdm(zip(planilha["publicacao"],planilha["numero_processo"],planilha["estado"])):
-		
-		
-		###### parte de verificar os tipos processuais 
-		try:
-			# docum = open("teste_2.txt", encoding ="utf-8")
-			# public = docum.read()
-			# print(public[6].encode())
-			publis = re.sub(r"\n"," ",public)# eliminar as quebras de linhas para pontecializar o regex
-			# print(publis)
-			# z = input("")
-			# procurar apenas no começo da publicação
-	
-
-			if len(publis) <= 1000: # se a publicação tiver até 1000 caracteres, procura no texto todo
-				publis = publis
-				# public_pt_final = publis 
-			else:	
-				vlr = int(len(publis)*0.10)
-				if vlr < 350: # se tiver mais de mil até 3500, procura nos 350 primeiro caracteres
-					vlr = 350
-				publis = publis[0:vlr] # fora isso, pesquisar nos 10% primeiros caracteres da publicação
-				# public_pt_final = publis[vlr:] # ou nos 10% no caso da variável da data da decisão
-			
-			trecho_publis = publis.lower()
-			# print(trecho_publis)
-
-			tipo = "" # tipo recebe valor em branco
-
-			# itera sobre o dicionário de tipos processuais
-			for n in range(len(termos)):
-				rgx = termos [n]
-				rgx = re.sub(r"\n"," ",rgx)
-				# tenta encontrar o tipo na publicação
-				try:
-					if re.search(rgx, trecho_publis, re.IGNORECASE): 
-						tipo = termos[n]# se encontrar normaliza para minúscula e grava na variável
-						# print(tipo)
-						break
-				except:
-					pass
-
-			# junta o a variável tipo na lista		
-			tipos_proces.append(tipo.strip())
-			# z=input("")
-			
-
-		# em caso de erro também insere o vazio 
-		except:
-			tipo = ""
-			tipos_proces.append(tipo)
-			
-
-
-		########## assunto ##################	
-		try:
-			assunto = "" # tipo recebe valor em branco
-
-
-			# itera sobre o dicionário de tipos processuais
-			for l in range(len(assuntos_list)):
-				rgx_as = assuntos_list[l]
-				rgx_as = re.sub(r"\n"," ",rgx_as) #elimina eventuais quebras de linhas no regex tbem
-				
-				if re.search("assunto:",trecho_publis,re.MULTILINE):
-					quebras = re.split("assunto:",trecho_publis)
-					trecho_publis = quebras[1][:50]
-				
-				# tenta encontrar o tipo na publicação
-				try:
-					if re.search(rgx_as, trecho_publis, re.IGNORECASE): 
-						assunto = assuntos_list[l] # se encontrar normaliza para minúscula e grava na variável
-						# print(assunto,rgx_as, l)
-						# z=input("")
-						break
-				except:
-					pass
-
-			# junta o a variável tipo na lista		
-			assuntos.append(assunto)
-		
-
-		# em caso de erro também insere o vazio 
-		except:
-			assunto = ""
-			assuntos.append(assunto)
-
-
-	########### Parte de inserir a comarca
-		try:
-			# recebe o código e o Estado
-			codigo = num[-4:]
-			estado = est
-			array_estado = Comarcas(estado) # retorna o array do Estado na função
-
-			# itera no array do Estado até achar o código da comarca, caso não encontre insere o vazio por default
-			for k in range(len(array_estado)):
-				comarca = ""
-				if array_estado[k][0] == codigo:
-					comarca = array_estado[k][2]
-					break
-			comarcas.append(comarca)
-
-		# em caso de algum erro insere o vazio
-		except:
-			comarca = ""
-			comarcas.append(comarca)
-
-		####### parte de buscar os advogados
-
-		oab = sep_representante(public)
-		oabs.append(oab) 
-
-	
-	# print("Temos",total, "não classificados.\n O total é",len(planilha["publicacoes"]),
-	# 	"\n o percentual é",(total*100)/len(planilha["publicacoes"]))
-
-
-	planilha ["tipos_processuais"] = tipos_proces
-	planilha["comarcas"] = comarcas
-	planilha["representantes"] = oabs
-	planilha["assuntos"] = assuntos
-
-	return planilha
 
 ##################################################################################################
 
@@ -297,7 +105,7 @@ def Separar_textos_paginas(ano):
 
 
 
-			## contabilização da quantidade de flags mais frequentes
+			# contabilização da quantidade de flags mais frequentes
 									
 			# nome_acao = pd.DataFrame()
 			# nome_acao["Ação"] = caracteristicas							
@@ -335,6 +143,10 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano, num_ar
 		## regra da pesquisa do número CNJ dentro do texto da publicação
 
 		txt_inic = txt[:90]
+
+
+
+		## incício da busca
 
 		
 		if re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{2,3}-\d{2}.\d{4}\.\d\.\d{2}\.\d{4}',txt_inic, re.IGNORECASE.MULTILINE): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
@@ -389,21 +201,21 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano, num_ar
 							publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
 							num_juntado = num
 				except:
-					pass				
-	
+					pass
 
+		
 		
 
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
-	# qtdade = 0
-	# for item,num in zip(publicacoes,num_pags):
-	# 	qtdade = qtdade+1
-	# 	print("Quantidade avaliada:",qtdade)
-	# 	print("página", num)
-	# 	print(item)
-	# 	print("-----------------")
-	# 	z = input('')
+	qtdade = 0
+	for item,num in zip(publicacoes,num_pags):
+		qtdade = qtdade+1
+		print("Quantidade avaliada:",qtdade)
+		print("página", num)
+		print(item)
+		print("-----------------")
+		z = input('')
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
 
 
@@ -445,9 +257,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano, num_ar
 
 	##################   FIM DO TRECHO PARA CONFERÊNCIA ##############################
 
-
-	df_textos_paginas = classificacao_quali(df_textos_paginas)
-
+	
 	frag = df_textos_paginas["nomes_pastas"].str.split("-", n=2, expand = True)
 	df_textos_paginas["dia"] = frag[0]
 	df_textos_paginas["mes"] = frag[1]
@@ -460,6 +270,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano, num_ar
 	df_textos_paginas = df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais", "assuntos","comarcas",
 	"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador", "tipo_publicacao"]]
 
+	# gera o excel com o DF final
 
 
 	# cria o diretório
@@ -477,6 +288,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano, num_ar
 
 	df_textos_paginas.to_csv(path+"\Diarios_publicacoes_CE_"+str(df_textos_paginas["nomes_pastas"][0])+"_"+str(num_arq)+".csv", index = False)
 	df_textos_paginas.to_excel(path+"\Diarios_publicacoes_CE_"+str(df_textos_paginas["nomes_pastas"][0])+"_"+str(num_arq)+".xlsx", index = False)
+
 
 	# converte para JSON
 
