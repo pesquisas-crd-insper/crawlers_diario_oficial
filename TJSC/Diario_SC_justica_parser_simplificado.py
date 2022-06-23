@@ -74,7 +74,7 @@ def Convert_data(dt_ext):
 	#formata a data	
 	dataFormatada = date.strftime('%d-%m-%Y')
 
-	print(dataFormatada)
+	# print(dataFormatada)
 	# z= input("")
 	
 	return dataFormatada
@@ -300,18 +300,25 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 	# print('qtadade nomes_pastas',len(nomes_pastas))
 	# z = input("")
 
-	pattern_sepa = re.compile("\s---\s|----\s*\d{1,2}\s*-|\d{1,2}\s*-\s*Ed. \d{3,5}-\d{2}|\d{1,2}-Ed\.\d{4,6}")
-	pattern_init = re.compile('ADV:|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{3,7}-.*\d|\d{4}\.\d{3,7}-\s*\d')
+	pattern_sepa = re.compile("\s---\s|----\s*\d{1,2}\s*-|\d{1,2}\s*-\s*Ed. \d{3,5}-\d{2}|\d{1,2}-Ed\.\d{4,6}|\d{1,2}\s*-\s*Ed. \d{3,5}\/\d{2}")
+	pattern_init = re.compile('ADV:|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{3,7}-.*\d|\d{4}\.\d{3,7}-\s*\d|\d{2,4}\.\d{2}\.\d{3,7}-\s*\d')
 	pattern_num = re.compile('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{3,7}-\d|\d{2,3}\.\d{2}\.{3,7}-\d|\d{4}\.\d{3,7}-\s*\d|\d{2,4}\.\d{2}\.\d{3,7}-\s*\d')
 
 
 	for txt,num,doc,pst in zip(txt_unific,numeros_paginas,nome_doc,nomes_pastas):
 	
 		## regra da pesquisa do número CNJ dentro do texto da publicação
+		# if num > 2293:
+		# 	# if re.search('\d{2,4}\.\d{2}\.\d{3,7}-\s*\d', txt.replace("\n","")):
+		# 	print(txt)
+		# 	z= input("")
 
 		if re.search(pattern_init, txt.replace("\n","")): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
 			
-				
+			# if num > 2293:
+			# 	print("----",txt)
+			# 	z= input("")
+
 			if re.search(pattern_sepa,txt[25:].replace("\n","")):
 
 				separacoes = re.findall(pattern_sepa,txt)
@@ -389,35 +396,66 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 		nome_pst_l = []
 		num_process_l =[]			
 		for n in range(len(publicacoes)):
-			try:
-				# 270
-				nm_proc = re.search(pattern_num,publicacoes[n][:270]).group().replace(" ","") # se encontrar o padrão completo, separa o número
-				# print(nm_proc)
-				if len(num_process_l) > 0:
-					proces_ant = num_process_l[-1]
-					if proces_ant == nm_proc or len(publicacoes_l[-1]) < 210:
-						publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
-						del publicacoes_l[-1] # deleta da lista a publicação anterior
-						publicacoes_l.append(publicacoes[n]) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-					else:	
+			
+			if len(publicacoes_l) > 0 and re.search(r"----\s*\d{1,2}\s*-",publicacoes_l[-1]):
+				#270
+				try:
+					nm_proc = re.search(pattern_num,publicacoes[n][:100]).group().replace(" ","")
+					if len(num_process_l) > 0:
+						proces_ant = num_process_l[-1]
+						if proces_ant == nm_proc or len(publicacoes_l[-1]) < 210:
+							publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
+							del publicacoes_l[-1] # deleta da lista a publicação anterior
+							publicacoes_l.append(publicacoes[n]) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+						else:	
+							num_process_l.append(nm_proc) # salva na lista
+							publicacoes_l.append(publicacoes[n])
+							num_pags_l.append(num_pags[n])
+							nome_docs_l.append(nome_docs[n])
+							nome_pst_l.append(nome_pst[n])	
+					else:
 						num_process_l.append(nm_proc) # salva na lista
 						publicacoes_l.append(publicacoes[n])
 						num_pags_l.append(num_pags[n])
 						nome_docs_l.append(nome_docs[n])
-						nome_pst_l.append(nome_pst[n])	
-				else:
-					num_process_l.append(nm_proc) # salva na lista
-					publicacoes_l.append(publicacoes[n])
-					num_pags_l.append(num_pags[n])
-					nome_docs_l.append(nome_docs[n])
-					nome_pst_l.append(nome_pst[n])
-			except:
-				if len(publicacoes_l) >0:
-					publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
-					del publicacoes_l[-1] # deleta da lista a publicação anterior
-					publicacoes_l.append(publicacoes[n])
+						nome_pst_l.append(nome_pst[n])
+				except:
+					if len(publicacoes_l) >0:
+						publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
+						del publicacoes_l[-1] # deleta da lista a publicação anterior
+						publicacoes_l.append(publicacoes[n])		
+
+
+			else:
+				try:
+					nm_proc = re.search(pattern_num,publicacoes[n][:420]).group().replace(" ","") # se encontrar o padrão completo, separa o número
+					# print(nm_proc)
+					if len(num_process_l) > 0:
+						proces_ant = num_process_l[-1]
+						if proces_ant == nm_proc or len(publicacoes_l[-1]) < 210:
+							publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
+							del publicacoes_l[-1] # deleta da lista a publicação anterior
+							publicacoes_l.append(publicacoes[n]) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+						else:	
+							num_process_l.append(nm_proc) # salva na lista
+							publicacoes_l.append(publicacoes[n])
+							num_pags_l.append(num_pags[n])
+							nome_docs_l.append(nome_docs[n])
+							nome_pst_l.append(nome_pst[n])	
+					else:
+						num_process_l.append(nm_proc) # salva na lista
+						publicacoes_l.append(publicacoes[n])
+						num_pags_l.append(num_pags[n])
+						nome_docs_l.append(nome_docs[n])
+						nome_pst_l.append(nome_pst[n])
+				except:
+					if len(publicacoes_l) >0:
+						publicacoes[n] = publicacoes_l[-1]+" "+publicacoes[n]  # unifica o texto atual com a publicação anterior
+						del publicacoes_l[-1] # deleta da lista a publicação anterior
+						publicacoes_l.append(publicacoes[n])
 				
 		print("agora temos",len(publicacoes_l))
+		# print(publicacoes_l[-1])
 
 
 		##### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
@@ -425,7 +463,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 		# for item,num in zip(publicacoes_l,num_pags_l):
 		# 	qtdade = qtdade+1
 		# 	print("Quantidade avaliada:",qtdade)
-		# 	if num > 285:
+		# 	if num > 329:
 		# 		print("página", num)
 		# 		print(item)
 		# 		print("-----------------")
