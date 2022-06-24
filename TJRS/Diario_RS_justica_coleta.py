@@ -26,6 +26,7 @@ import shutil
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+import fitz
 
 def downloads_done(path_final, quantidade):
 	
@@ -36,7 +37,7 @@ def downloads_done(path_final, quantidade):
 	desist = 0 # momento de desistência caso o site demore muito para responder
 	
 	while True:
-		if cont == quantidade: # se a contagem identificar o mesmo número de item da quantidade total
+		if cont > quantidade: # se a contagem identificar o mesmo número de item da quantidade total
 			break # encerra o processo
 		
 		else:
@@ -152,6 +153,21 @@ def main():
         # encerra a tela do Chrome
         driver.quit()
 
+        # iteração sobre as páginas
+        arquivos = os.listdir(path_final)
+
+        for b in tqdm(range(len(arquivos))):
+        
+            nome_arquivo = os.path.join(path_final, arquivos[b])
+            try:
+                with fitz.open(nome_arquivo) as pdf:
+                    textos = []
+                    for n in range(1):
+                        texto = pdf[n].get_text()
+                        textos.append(texto)
+            except:
+                print("arquivo", arquivos[b],"corrompido. Apagado!")
+                os.remove(nome_arquivo)        
    
 ######################################       ***     ###################################################
 
