@@ -30,7 +30,7 @@ def Separar_textos_paginas(ano):
 	for b in tqdm(range(len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
-		print(pastas[b])
+		# print(pastas[b])
 		
 		
 		for a in range(len(arquivos)):
@@ -40,7 +40,7 @@ def Separar_textos_paginas(ano):
 			txt_unific = []
 			sem_lines = []
 	
-			print(arquivos[a])
+			print(pastas[b],":",arquivos[a])
 
 			nome = os.path.join(nome_pasta, arquivos[a])
 
@@ -261,8 +261,8 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 
 		
 	if len(publicacoes) == 0:
-		print("arquivo vazio!")
-		z= input("")
+		print(num_arq,"vazio!")
+	
 	else:
 		publicacoes_l = []
 		num_pags_l = []
@@ -272,12 +272,11 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 		for n in range(len(publicacoes)):
 			try:
 				nm_proc = re.search('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{4}\.\d{6}-\d|\d{2,7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}',publicacoes[n], re.IGNORECASE).group().replace(" ","") # se encontrar o padrão completo, separa o número
-				num_process.append(nm_proc) # salva na lista
+				num_process_l.append(nm_proc) # salva na lista
 				publicacoes_l.append(publicacoes[n])
 				num_pags_l.append(num_pags[n])
 				nome_docs_l.append(nome_docs[n])
-				nome_pst_l.append(nome_pst[n])
-				num_process_l.append(num_process[n])	
+				nome_pst_l.append(nome_pst[n])	
 			except:
 				pass
 
@@ -307,7 +306,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific, ano,num_ar
 		# gera o DF com as publicações e as demais informações
 
 		df_textos_paginas = pd.DataFrame()
-		df_textos_paginas["numero_processo"] = num_process
+		df_textos_paginas["numero_processo"] = num_process_l
 		df_textos_paginas["publicacao"] = publicacoes_l
 		df_textos_paginas["numeros_paginas"] = num_pags_l
 		df_textos_paginas["nome_documento"] = nome_docs_l
