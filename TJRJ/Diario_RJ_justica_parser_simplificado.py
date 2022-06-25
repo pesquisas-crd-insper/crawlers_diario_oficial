@@ -11,6 +11,9 @@ from pathlib import Path
 
 
 
+
+
+
 ############################## função para cortar os textos dos diários ####################################################
 
 
@@ -45,7 +48,8 @@ def Separar_textos_paginas(ano):
 			vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
 			txt_unific = []
 			sem_lines = []
-			posicao = []
+			
+			
 
 			print(nome_pasta,":",arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
@@ -72,6 +76,7 @@ def Separar_textos_paginas(ano):
 								# itera para cada linha
 
 							txt_block = []
+							# print("--------------")
 							for x in range(len(lines)):
 
 								# dentro das linhas seleciona os spans
@@ -87,6 +92,10 @@ def Separar_textos_paginas(ano):
 								
 									# print(posic)
 									# z=input("")
+									# if num_pag == 1:
+									# 	print((tam,flag))
+									# 	print(u['text'])
+									# 	z = input("")
 
 									## para o teste previo de verificar as flags (com posição pq esse bot utiliza na junção)	
 									caracteristicas.append((tam,flag))
@@ -95,7 +104,7 @@ def Separar_textos_paginas(ano):
 
 									if tam == "8" and flag == "0" or tam == "8" and flag =="16": 
 										txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-
+										
 
 									# para verificar o que aparece nos padrões das flags
 							
@@ -112,6 +121,9 @@ def Separar_textos_paginas(ano):
 							if len(txt_block) > 0:
 								
 								txt_fim = " ".join(txt_block)
+								# if num_pag == 2:
+								# 	print(txt_fim)
+								# 	print("-------------")
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
 								nomes_pastas.append(nome_pasta[-10:])
@@ -155,6 +167,47 @@ def Separar_textos_paginas(ano):
 			# retorna as listas (antes de fazer a junção)
 			# return numeros_paginas, nome_doc, nomes_pastas, vlrs_unific, txt_unific
 	
+#########################################################################################################################
+
+def separacao_padroes(num_caract,txt):
+
+	
+	# insere o caracter final e orgniza a lista com os indices dos caracteres iniciais dos numeros dos processos em ordem
+	num_caract.append(len(txt))	
+	num_caract.sort()
+		
+
+	#elimina os caracteres duplicados, se houver
+	df_caract = pd.DataFrame()
+	df_caract ["caracter"] = num_caract
+	df_caract = df_caract.drop_duplicates(subset = "caracter")
+
+
+	# transforma numa lista
+	num_caract = df_caract ["caracter"].to_list()
+
+
+
+	# gera a lista com os números dos caracteres para fazer os cortes e gera a lista com as publis separadas
+	# aqui teremos o número do caracter do começo e do final para cada recorte
+	publis = []
+	num_comec = 0
+	for h in range(len(num_caract)):
+		trecho = txt [num_comec:num_caract[h]]
+		trecho = trecho.strip()
+		publis.append(trecho)
+		num_comec = num_caract [h]
+
+	publis_l = []	
+	for pub in publis:
+		pub = pub.strip()	
+		publis_l.append(pub)
+		
+	# print("vários")
+
+	return publis_l
+
+
 
 
 ###############################  Função para juntar os blocos dos textos ################################################
@@ -172,13 +225,13 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 
 
 	print("a página maior é",max(numeros_paginas))
-	print('qtdade textos',len(txt_unific))
-	print('qtdade num_pag',len(numeros_paginas))
-	print('qtdade nomes_docs',len(nome_doc))
-	print('qtadade nomes_pastas',len(nomes_pastas))
-	z = input("")
+	# print('qtdade textos',len(txt_unific))
+	# print('qtdade num_pag',len(numeros_paginas))
+	# print('qtdade nomes_docs',len(nome_doc))
+	# print('qtadade nomes_pastas',len(nomes_pastas))
+	# z = input("")
 
-
+	pattern_sepa = re.compile('Proc.\s*\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}')
 	pattern_init = re.compile('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}')
 	
 
@@ -186,42 +239,130 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 
 		## regra da pesquisa do número CNJ dentro do texto da publicação
 
-		text = txt[:260].replace("\n","")
+		# text = txt[:150].replace("\n","")
 		# print(text)
-	
-		## incício da busca
-
 		
-		if re.search(pattern_init,text): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
-			nm_proc = re.search(pattern_init,text).group().replace(" ","") # se encontrar o padrão completo, separa o número
-			num_process.append(nm_proc) # salva na lista
-			# print(nm_proc)
-			# print("*"*8)
-			# z = input("")
+		# if num == 15:
+		# 	print(txt)
+		# 	z = input("")
+	
+		## início da busca
+		txt = txt.replace("\n","")
+		
+		if re.search(pattern_init,txt): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
 
-			# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
-			publicacoes.append(txt) 
-			num_pags.append(num)
-			nome_docs.append(doc)
-			nome_pst.append(pst)
+			separacoes = re.findall(pattern_sepa,txt[150:])
+			if len(separacoes) > 0:
+				# if num == 4:
+				# 	print(num)
+				# 	print(txt)
+				# 	z = input("")
 			
+				
+				separacoes = re.findall(pattern_sepa,txt)
+
+				num_caract = []
+				for item in separacoes:
+					num_caracter = txt.find(item)
+					if num_caracter not in num_caract:
+						num_caract.append(num_caracter)
+
+					# tratamento para o caso de termos dois números CNJ iguaus na mesma página, ele verifica a próxima posição
+					else:
+						num_caracter = txt.find(item,num_caract[-1]+28,len(txt)) # por default são 28, porque é maior que um número CNJ
+						num_caract.append(num_caracter)
+				
+				num_caract = [0 if numero < 0 else numero for numero in num_caract]
+				partes = separacao_padroes(num_caract,txt)
+
+				# for item in partes:
+				# 	print(num)
+				# 	print(item)
+				# 	z= input("")
+
+
+				for f in range(len(partes)):
+					if re.search(pattern_init,partes[f][:40]):
+						nm_proc = re.search(pattern_init,partes[f][:40]).group().replace(" ","") # se encontrar o padrão completo, separa o número
+						num_process.append(nm_proc) # salva na lista
+						try:
+							if len(ultimo) < 130:
+								partes[f] = ultimo +"\n"+partes[f]
+							publicacoes.append(partes[f]) 
+							num_pags.append(num)
+							nome_docs.append(doc)
+							nome_pst.append(pst)
+							pular = False
+						except:
+							publicacoes.append(partes[f]) 
+							num_pags.append(num)
+							nome_docs.append(doc)
+							nome_pst.append(pst)
+							pular = False
+					
+						
+					else:
+						if len(publicacoes) > 0:
+							partes[f] = publicacoes[-1]+" "+partes[f]  # unifica o texto atual com a publicação anterior
+							del publicacoes[-1] # deleta da lista a publicação anterior
+							publicacoes.append(partes[f])
+			# 			# else:
+			# 			# 	publicacoes.append(partes[f]) 
+			# 			# 	num_pags.append(num)
+			# 			# 	nome_docs.append(doc)
+			# 			# 	nome_pst.append(pst)
+
+
+
+
+			else:	
+				nm_proc = re.search(pattern_init,txt).group().replace(" ","") # se encontrar o padrão completo, separa o número
+				num_process.append(nm_proc) # salva na lista
+				# print(nm_proc)
+				# print("*"*8)
+				# z = input("")
+
+				# salva nas listas a publicação e as demais informações dela (página, documento, pasta)	
+
+				#################################
+				#### toda vez que achar um padrão sempre pegar o anterior se o anterior não for um vazio #########
+				try:
+					if len(ultimo) < 130:
+						txt = ultimo +"\n"+txt
+
+					publicacoes.append(txt) 
+					num_pags.append(num)
+					nome_docs.append(doc)
+					nome_pst.append(pst)
+					pular = False
+				except:
+					publicacoes.append(txt) 
+					num_pags.append(num)
+					nome_docs.append(doc)
+					nome_pst.append(pst)
+					pular = False					
 
 
 		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
 
 		### se o bbox for do outro lado ele aceita uma...tenho que inserir esse atributo na característica
 		else:
-			try:
-				pag_anter = num_pags[-1]
-				if num == pag_anter:
-					pass
-				else:
-					if len(publicacoes)>=1 and re.search("^Disponibilizado -",txt,re.IGNORECASE) == None:
+			# if num == 15:
+			# 	print("----",txt)
+			if 5 < len(txt) < 130 and re.search("id:|expediente|despacho|\.",txt,re.IGNORECASE) == None:
+				ultimo = txt
+			else:
+				if re.search("id:",txt,re.IGNORECASE):
+					pular = True
+				try:
+					if len(publicacoes)>=1 and re.search("Data de Disponibilização:|data de publicação:",txt,re.IGNORECASE) == None and pular == False:
+						# if num == 15:
+						# 	print("*****",txt)
 						txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
 						del publicacoes[-1] # deleta da lista a publicação anterior
 						publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-			except:
-				pass
+				except:
+					pass
 
 		
 		
@@ -230,10 +371,10 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
 	# qtdade = 0
-	# for item,num,pos in zip(publicacoes,num_pags,posicao_atual):
+	# for item,num in zip(publicacoes,num_pags):
 	# 	qtdade = qtdade+1
 	# 	print("Quantidade avaliada:",qtdade)
-	# 	print("página", num,"posição",pos)
+	# 	print("página:",num)
 	# 	print(item)
 	# 	print("-----------------")
 	# 	z = input('')
