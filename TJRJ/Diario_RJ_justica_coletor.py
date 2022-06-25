@@ -52,7 +52,7 @@ def Baixar_diarios(datas):
 		# faz o request do site
 		link_inicial ="https://www3.tjrj.jus.br/consultadje/pdf.aspx?dtPub={}&caderno={}&pagina=-1&dc=" # URL utilizada para baixar os cadernos.
 
-		cadernos = ["S", "C", "I", "E"]
+		cadernos = ["S", "C", "I"]
 
 		print(data)
 		for cad in cadernos:
