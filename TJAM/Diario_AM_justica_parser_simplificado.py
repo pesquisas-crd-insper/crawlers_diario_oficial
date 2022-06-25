@@ -34,20 +34,20 @@ def Separar_textos_paginas(ano):
 		arquivos = os.listdir(nome_pasta)
 		
 
-		# prepara as listas com os valores a serem usados
-		numeros_paginas =[]
-		nome_doc = []
-		nomes_pastas =[]
-		vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
-		txt_unific = []
-		sem_lines = []
-		posicao = []
-
-		## lista para verificar as flags escolhidas
-		caracteristicas =[]
 		
 		for a in range(len(arquivos)):
 
+			# prepara as listas com os valores a serem usados
+			numeros_paginas =[]
+			nome_doc = []
+			nomes_pastas =[]
+			vlrs_unific= [] # lista que salva os valores que identificam os parágrafos
+			txt_unific = []
+			sem_lines = []
+			posicao = []
+
+			## lista para verificar as flags escolhidas
+			caracteristicas =[]
 			print(nome_pasta,":",arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
 			# print(nome)
