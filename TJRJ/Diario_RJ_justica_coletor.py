@@ -66,7 +66,21 @@ def Baixar_diarios(datas):
 			except:
 				print("não tem o caderno", cad)  
         
-  
+		# iteração sobre as páginas
+        arquivos = os.listdir(path_final)
+
+        for b in tqdm(range(len(arquivos))):
+        
+            nome_arquivo = os.path.join(path_final, arquivos[b])
+            try:
+                with fitz.open(nome_arquivo) as pdf:
+                    textos = []
+                    for n in range(1):
+                        texto = pdf[n].get_text()
+                        textos.append(texto)
+            except:
+                print("arquivo", arquivos[b],"corrompido. Apagado!")
+                os.remove(nome_arquivo)  
 
 
 #####################################################
