@@ -41,7 +41,7 @@ def Separar_textos_paginas(ano):
 				print(arquivos[a],"é administrativo")
 				pass 
 			else:
-				# print(arquivos[a])
+				print(nome_pasta,arquivos[a])
 				
 				numeros_paginas =[]
 				nome_doc = []
@@ -208,7 +208,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 	nome_docs = []
 	nome_pst = []
 	
-	print("a página maior é",max(numeros_paginas))
+	# print("a página maior é",max(numeros_paginas))
 	# print('qtdade textos',len(txt_unific))
 	# print('qtdade num_pag',len(numeros_paginas))
 	# print('qtdade nomes_docs',len(nome_doc))
@@ -275,7 +275,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 
 				# tratamento para o caso de termos dois números CNJ iguaus na mesma página, ele verifica a próxima posição
 				else:
-					num_caracter = txt.find(item,num_caract[-1]+28,len(txt)) # por default são 28, porque é maior que um número CNJ
+					num_caracter = txt.find(item,num_caract_1[-1]+28,len(txt)) # por default são 28, porque é maior que um número CNJ
 					num_caract_1.append(num_caracter)
 			
 			num_caract_2 = []
@@ -286,8 +286,8 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 
 				# tratamento para o caso de termos dois números CNJ iguaus na mesma página, ele verifica a próxima posição
 				else:
-					num_caracter = txt.find(item,num_caract[-1]+28,len(txt)) # por default são 28, porque é maior que um número CNJ
-					num_caract.append(num_caracter_2-43)
+					num_caracter = txt.find(item,num_caract_2[-1]+28,len(txt)) # por default são 28, porque é maior que um número CNJ
+					num_caract_2.append(num_caracter-43)
 
 
 			num_caract = num_caract_1 + num_caract_2
@@ -359,7 +359,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 	if len(publicacoes) == 0:
 		print("arquivo", num_arq, "vazio")
 	else:
-		print("tínhamos", len(publicacoes))
+		# print("tínhamos", len(publicacoes))
 		publicacoes_l = []
 		num_pags_l = []
 		nome_docs_l = []
@@ -391,7 +391,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 				pass
 
 
-		print("agora temos",len(publicacoes_l))
+		# print("agora temos",len(publicacoes_l))
 
 
 	###### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
@@ -474,7 +474,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas,txt_unific,ano, num_arq
 		path = dir_path + f'\Diarios_processados_MT_csv_'+str(ano)
 		Path(path).mkdir(parents=True, exist_ok=True)
 
-		print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
+		# print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
 
 		# gera o excel e o csv com o DF final
 
