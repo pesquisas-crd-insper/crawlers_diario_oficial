@@ -9,7 +9,7 @@ from datetime import datetime
 import json
 import time
 from pathlib import Path
-
+import jellyfish
 
 
 ####################### função para converter a data ####################
@@ -31,18 +31,23 @@ def Convert_data(dt_ext):
         '12': 'dezembro'        
     }
 
+
+
+	try:
+		nome_mes = re.findall('de(.*)de',dt_ext)[0].strip()
+	except:
+		nome_mes = re.findall('de(.*)',dt_ext[:-4])[0].strip()
 	
-    #separa o nome do mês e verifica a numeração dele no dict
 
-	nome_mes = re.findall('\sde\s(.*)\sde',dt_ext)[0].strip()
 	for key in meses:
-		if meses[key] == nome_mes:
+		if jellyfish.jaro_distance(meses[key],nome_mes) > 0.8:
 			mes = key
-
+					
 	# print(mes)
+	# z= input("")
 
 	#separa o dia		
-	dia = re.findall(',*\s*(.\d{1,2}\s)',dt_ext)[0].strip()
+	dia = re.findall(',(\d{1,2})de',dt_ext)[0].strip()
 	# print(dia)
 
 	#separa o trecho do ano e depois o ano		
@@ -50,6 +55,7 @@ def Convert_data(dt_ext):
 	ano_ajus = re.findall('(\d{4})',trch)[0]
 	
 	# print(ano_ajus)
+	# z = input("")
 	### ajustar pra virar um DTtime
 	
 	# junta a string
@@ -67,66 +73,6 @@ def Convert_data(dt_ext):
 	
 	return dataFormatada
 
-
-###################################################################################################################
-def ajusta_lista(txt_block):
-
-	# print("entrou")
-
-	bloco = []
-	resto = []
-	for trecho in txt_block:
-		if len(bloco) == 0:
-			bloco.append(trecho[0])
-			bloco.append(trecho[1])
-			bloco.append(trecho[2])
-		else:
-			if trecho[0] == bloco[0]:
-				bloco.append(trecho[2])
-			else:
-				resto.append(trecho)
-
-	text = " ".join(bloco[2:])
-	bloco[2] = text			
-	bloco = bloco[:3]
-	return bloco, resto
-
-
-
-##################################################################################################################
-def Organiza_blocos(txt_block):
-
-	# print("entrou")
-
-
-	# txt_block.sort()
-	# print(txt_block)
-	# print("------------")
-	
-
-	# z = input("")
-	sub_blocks = []
-	resto = [1]
-
-	while True:
-		# print(len(resto))
-		# z = input("")
-		if len(resto) == 0:
-			break
-		else:
-			# print("aqui")
-			bloco, resto = ajusta_lista(txt_block)
-			txt_block = resto
-			sub_blocks.append(bloco)
-
-
-	# for item in sub_blocks:
-	# 	print(item)
-	# 	print("********")
-	# 	z = input("")
-
-
-	return sub_blocks	
 
 
 ###################################################################################################################
@@ -239,26 +185,24 @@ def Separar_textos_paginas(ano):
 									tam = str(u['size']).split(".")[0]
 									flag =str(u['flags'])
 									caracteristicas.append((tam,flag))
-									# posic_1 = str(u['bbox'][0]).split(".")[0]
-									# posic_2 = str(u['bbox'][1]).split(".")[0]
-
-									# if tam == "7" and flag == "0" or tam == "7" and flag == "4":
-									# 	# print("deu")
-									# 	print(posic_1, posic_2, u['text'])
-									# 	z = input('')
 									
-
-									# print(tam,flag)
-									# print(posic_1,posic_2)
-									# print(u['text'])
-									# z = input("")
+									# if num_pag == 1 and a == 1:
+									# 	print(u['text'])
+									# 	z = input("")
+								
+									if num_pag == 1:
+										if re.search('disponibilização:',u['text'], re.IGNORECASE):
+											# z = input("")
+											data_ext = re.search(r',(\s.*\d{4})',u['text'], re.IGNORECASE).group()
+											data_ext = data_ext.lower()
+											data_ext = data_ext.replace(" ","")
+											# print(data_ext)
+											# z= input("")
+											data_ajust = Convert_data(data_ext)
 
 									if tam == "7" and flag == "0" or tam == "7" and flag == "4":
-										# txt_block.append((posic_1, posic_2, u['text'].strip())) # separa todos os textos de cada bloco e salva na lista para unificação
 										txt_block.append(u['text'].strip())
-										# print(posic_1, posic_2, u['text'])
-										# print(txt_block)
-										# z = input('')
+										
 			# 						
 			# 						## para verificar o que aparece nos padrões das flags
 							
@@ -271,25 +215,20 @@ def Separar_textos_paginas(ano):
 
 						
 							if len(txt_block) > 0:
-								# print("tem")
-								# blocos_finais = Organiza_blocos(txt_block)
-								# for item in blocos_finais:
-								# 	txt_unific.append(item)
 								txt_fim = " ".join(txt_block)
 								txt_unific.append(str(txt_fim))
 								numeros_paginas.append(num_pag)
 								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append("01-01-2012")
+								nomes_pastas.append(data_ajust)
 
 						
 							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
-							else:
-								
+							else:	
 								txt_fim = "NADATEM"
 								txt_unific.append([posic_1,posic_2,txt_fim])
 								numeros_paginas.append(num_pag)
 								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append("01-01-2012")
+								nomes_pastas.append(data_ajust)
 
 								
 					
@@ -314,11 +253,6 @@ def Separar_textos_paginas(ano):
 			# z = input("")
 			
 			nomes_pastas = [data_ajust if value=="NADA" else value for value in nomes_pastas]
-			# # print(nomes_pastas[:10])
-				# txt_unific.sort()
-			# for item in txt_unific:
-			# 	print(item)
-			# 	z = input("")
 			Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,a)								
 			# return numeros_paginas,	nome_doc, nomes_pastas, txt_unific
 	
