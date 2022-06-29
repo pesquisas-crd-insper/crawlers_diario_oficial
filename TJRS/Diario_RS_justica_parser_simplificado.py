@@ -134,8 +134,8 @@ def separacao_padroes(num_caract,txt):
 def Caracteristicas(caracteristicas):
 
 	caract = pd.DataFrame()
-	caract["Ação"] = caracteristicas							
-	caract = pd.DataFrame(caract.groupby(["Ação"])["Ação"].count())
+	caract["valores"] = caracteristicas							
+	caract = pd.DataFrame(caract.groupby(["valores"])["valores"].count())
 	caract.columns = ["quantidade"]
 	caract = caract.sort_values(by=['quantidade'],ascending=False)						
 	caract = caract.reset_index()
@@ -143,12 +143,12 @@ def Caracteristicas(caracteristicas):
 	# print(caract)
 	# print(caract.sort_values(by=['quantidade'],ascending=False))
 
-	tam_1 = caract["Ação"][0][0]
+	tam_1 = caract["valores"][0][0]
 	# print(tam_1)
 	# z= input("")
-	flag_1 = caract["Ação"][0][1]
-	tam_2 = caract["Ação"][1][0]
-	flag_2 = caract["Ação"][1][1]
+	flag_1 = caract["valores"][0][1]
+	tam_2 = caract["valores"][1][0]
+	flag_2 = caract["valores"][1][1]
 	return 1, tam_1, flag_1, tam_2, flag_2
 
 
@@ -173,7 +173,7 @@ def Separar_textos_paginas(ano):
 
 	# falta de 0 a 10 em 2019
 
-	for b in tqdm(range(2,len(pastas))):
+	for b in tqdm(range(len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
 
