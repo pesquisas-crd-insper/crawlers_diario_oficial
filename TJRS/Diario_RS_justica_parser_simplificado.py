@@ -14,7 +14,8 @@ import jellyfish
 
 ####################### função para converter a data ####################
 
-def Convert_data(dt_ext):
+def Convert_data(dt_ext, ano):
+	# print("entrou", dt_ext)
 	
 	meses = {
         '1': 'janeiro',
@@ -32,28 +33,42 @@ def Convert_data(dt_ext):
     }
 
 
+	# try:
+	nome_mes = re.findall(r'de\s*(.*)\sde',dt_ext)[0].strip()
+		# print(nome_mes)
+	# except:
+	# 	# print("entrou aqui!")
+	# 	dt_exte = dt_ext[:-4].strip()
+	# 	# print(dt_exte)
+	# 	# z = input("")
+	# 	nome_mes = re.findall(r'de\s(.*)',dt_exte)[0]
+		# print(nome_mes)
+		
 
-	try:
-		nome_mes = re.findall('de(.*)de',dt_ext)[0].strip()
-	except:
-		nome_mes = re.findall('de(.*)',dt_ext[:-4])[0].strip()
 	
-
-	for key in meses:
-		if jellyfish.jaro_distance(meses[key],nome_mes) > 0.8:
-			mes = key
+	if "ju" in nome_mes:
+		for key in meses:
+			if meses[key] == nome_mes:
+				mes = key
+	else:
+		for key in meses:
+			if jellyfish.levenshtein_distance(meses[key],nome_mes) <= 1:
+				mes = key
 					
 	# print(mes)
 	# z= input("")
+	dt_ext = dt_ext.replace(" ","")
+	# print(dt_ext)
+	# z = input("")
 
 	#separa o dia		
 	dia = re.findall(',(\d{1,2})de',dt_ext)[0].strip()
 	# print(dia)
 
 	#separa o trecho do ano e depois o ano		
-	trch = dt_ext[-6:]
-	ano_ajus = re.findall('(\d{4})',trch)[0]
-	
+	# trch = dt_ext[-6:]
+	# ano_ajus = re.findall('(\d{4})$',dt_ext)#[0]
+	ano_ajus = ano
 	# print(ano_ajus)
 	# z = input("")
 	### ajustar pra virar um DTtime
@@ -68,7 +83,7 @@ def Convert_data(dt_ext):
 	#formata a data	
 	dataFormatada = date.strftime('%d-%m-%Y')
 
-	# print(dataFormatada)
+	print(dataFormatada)
 	# z= input("")
 	
 	return dataFormatada
@@ -116,6 +131,29 @@ def separacao_padroes(num_caract,txt):
 	return publis_l
 
 ##################################################################################################
+def Caracteristicas(caracteristicas):
+
+	caract = pd.DataFrame()
+	caract["Ação"] = caracteristicas							
+	caract = pd.DataFrame(caract.groupby(["Ação"])["Ação"].count())
+	caract.columns = ["quantidade"]
+	caract = caract.sort_values(by=['quantidade'],ascending=False)						
+	caract = caract.reset_index()
+
+	# print(caract)
+	# print(caract.sort_values(by=['quantidade'],ascending=False))
+
+	tam_1 = caract["Ação"][0][0]
+	# print(tam_1)
+	# z= input("")
+	flag_1 = caract["Ação"][0][1]
+	tam_2 = caract["Ação"][1][0]
+	flag_2 = caract["Ação"][1][1]
+	return 1, tam_1, flag_1, tam_2, flag_2
+
+
+
+###################################################################################################
 
 							# Função para separar os textos das publicações
 
@@ -133,128 +171,158 @@ def Separar_textos_paginas(ano):
 
 	# iteração das pastas para acessar os arquivos de PDF individualmente
 
-	for b in tqdm(range(len(pastas))):
+	# falta de 0 a 10 em 2019
+
+	for b in tqdm(range(2,len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
 
 
-		## lista para verificar as flags escolhidas
-		caracteristicas =[]
-
 		for a in range(len(arquivos)):
 			
-			numeros_paginas =[]
-			nome_doc = []
-			nomes_pastas =[]
-			txt_unific = []
-			sem_lines = []
-			
-			print(arquivos[a])
+			print(nome_pasta,":",arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
+			# print(nome)
 
-
-			# contagem dos números das páginas
-			num_pag = 0
-			data_ajust = 'NADA'
-
-			with fitz.open(nome) as pdf:
-				for pagina in pdf:
-					num_pag = num_pag + 1
-					# print("\n\n\n Estamos na página",num_pag,"\n\n\n\n documento:",arquivos[a],"\n\n\n Na pasta:",nome_pasta,"\n\n\n")
-					
-					blocks = pagina.get_text("dict")['blocks'] # método que divide o texto em blocos no formato dict
-					# print(blocks)
-					# z= input("")
-	
-				
-					for o in range(len(blocks)):
-						
-											
-						# print(blocks[o])
-						# z= input("")
-						try: # elimina os blocos que não contém "lines" e consequentemente não tem textos
-							
-							lines = blocks[o]["lines"] # separa as linhas
-							
-							txt_block = []	
-							
-							for x in range(len(lines)):
-								spans = lines[x]["spans"] # separa os spans
-								
-								for u in spans:
-									tam = str(u['size']).split(".")[0]
-									flag =str(u['flags'])
-									caracteristicas.append((tam,flag))
-									
-									# if num_pag == 1 and a == 1:
-									# 	print(u['text'])
-									# 	z = input("")
-								
-									if num_pag == 1:
-										if re.search('disponibilização:',u['text'], re.IGNORECASE):
-											# z = input("")
-											data_ext = re.search(r',(\s.*\d{4})',u['text'], re.IGNORECASE).group()
-											data_ext = data_ext.lower()
-											data_ext = data_ext.replace(" ","")
-											# print(data_ext)
-											# z= input("")
-											data_ajust = Convert_data(data_ext)
-
-									if tam == "7" and flag == "0" or tam == "7" and flag == "4":
-										txt_block.append(u['text'].strip())
-										
-			# 						
-			# 						## para verificar o que aparece nos padrões das flags
-							
-			# 						# if tam == "7" and flag == "16":
-			# 						# 	print("\n\n PADRÃO 2\n\n",num_pag,"\n\n",u['text'])
-			# 						# 	z = input("")
-			# 						# # if tam == "9" and flag == "4":
-			# 						# 	print("\n\n PADRÃO 3\n\n",u['text'])	
-			# 						# 	z = input("")
-
-						
-							if len(txt_block) > 0:
-								txt_fim = " ".join(txt_block)
-								txt_unific.append(str(txt_fim))
-								numeros_paginas.append(num_pag)
-								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append(data_ajust)
-
-						
-							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
-							else:	
-								txt_fim = "NADATEM"
-								txt_unific.append([posic_1,posic_2,txt_fim])
-								numeros_paginas.append(num_pag)
-								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append(data_ajust)
-
-								
-					
-							
-
-			# 			# se não tiver as linhas, salva em outra lista - somente para conferência, não tem utilidade.					
-						
-						except:
-							sem_lines.append(blocks[o]["number"])
-
-
-
-			# # contabilização da quantidade de flags mais frequentes
-									
-			# nome_acao = pd.DataFrame()
-			# nome_acao["Ação"] = caracteristicas							
-			# nome_acao = pd.DataFrame(nome_acao.groupby(["Ação"])["Ação"].count())
-			# nome_acao.columns = ["quantidade"]
-			# nome_acao = nome_acao.reset_index()						
-
-			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
-			# z = input("")
-			
+			numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,str(arquivos[a]),nome, 0)
+			data_ajust = nomes_pastas[-1]
 			nomes_pastas = [data_ajust if value=="NADA" else value for value in nomes_pastas]
 			Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,a)								
 			# return numeros_paginas,	nome_doc, nomes_pastas, txt_unific
+
+
+
+def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, flag_2=0):
+
+
+
+	# print("os tamanhos são:",tam_1, flag_1,tam_2,flag_2)
+	numeros_paginas =[]
+	nome_doc = []
+	nomes_pastas =[]
+	txt_unific = []
+	sem_lines = []
+
+	## lista para verificar as flags escolhidas
+	caracteristicas =[]
+
+	# contagem dos números das páginas
+	num_pag = 0
+	data_ajust = 'NADA'
+
+	with fitz.open(nome) as pdf:
+		for pagina in pdf:
+			num_pag = num_pag + 1
+			# print("\n\n\n Estamos na página",num_pag,"\n\n\n\n documento:",arquivos[a],"\n\n\n Na pasta:",nome_pasta,"\n\n\n")
+			
+			blocks = pagina.get_text("dict")['blocks'] # método que divide o texto em blocos no formato dict
+			# print(blocks)
+			# z= input("")
+
+		
+			for o in range(len(blocks)):
+				
+									
+				# print(blocks[o])
+				# z= input("")
+				try: # elimina os blocos que não contém "lines" e consequentemente não tem textos
+					
+					lines = blocks[o]["lines"] # separa as linhas
+					
+					txt_block = []	
+					
+					for x in range(len(lines)):
+						spans = lines[x]["spans"] # separa os spans
+						
+						for u in spans:
+							tam = str(u['size']).split(".")[0]
+							flag =str(u['flags'])
+							caracteristicas.append((tam,flag))
+							
+							# if num_pag == 1:
+							# 	print(u['text'])
+							# 	z = input("")
+						
+							if num_pag == 1:
+								if re.search('disponibiliza(ção|çã):*',u['text'], re.IGNORECASE):
+									# z = input("")
+									data_ext = re.search(r',(\s.*\d{4})',u['text'], re.IGNORECASE).group()
+									data_extex = data_ext.split(" -")
+									data_ext = data_extex[0][:-4].strip()
+									# data_ext = data_ext.split(" ")
+									# print(data_ext)
+									# z= input("")
+
+									data_ext = data_ext.lower()
+									if data_ext[-2:] != "de":
+										data_ext = data_ext+" de"
+									# print(data_ext)
+									# z= input("")
+									data_ajust = Convert_data(data_ext, ano)
+
+									
+							if verif_caract == 1:
+								# print("***************")
+								# print()
+								# print("os tamanhos são:",tam_1, flag_1,tam_2,flag_2)
+								# print()
+								# print("***************")
+								if tam == str(tam_1) and flag == str(flag_1) or tam == str(tam_2) and flag == str(flag_2):
+									# print("Pegou!")
+									txt_block.append(u['text'].strip())
+							else:
+								pass
+
+							# if tam == "7" and flag == "0" or tam == "7" and flag == "4":
+							# 	txt_block.append(u['text'].strip())
+								
+	# 						
+	# 						## para verificar o que aparece nos padrões das flags
+					
+	# 						# if tam == "7" and flag == "16":
+	# 						# 	print("\n\n PADRÃO 2\n\n",num_pag,"\n\n",u['text'])
+	# 						# 	z = input("")
+	# 						# # if tam == "9" and flag == "4":
+	# 						# 	print("\n\n PADRÃO 3\n\n",u['text'])	
+	# 						# 	z = input("")
+
+				
+					if len(txt_block) > 0:
+						txt_fim = " ".join(txt_block)
+						txt_unific.append(str(txt_fim))
+						numeros_paginas.append(num_pag)
+						nome_doc.append(str(arquivo))
+						nomes_pastas.append(data_ajust)
+
+				
+					# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
+					else:	
+						txt_fim = "NADATEM"
+						txt_unific.append(txt_fim)
+						numeros_paginas.append(num_pag)
+						nome_doc.append(str(arquivo))
+						nomes_pastas.append(data_ajust)
+
+	# 			# se não tiver as linhas, salva em outra lista - somente para conferência, não tem utilidade.					
+				
+				except:
+					sem_lines.append(blocks[o]["number"])
+
+	if verif_caract == 0:				
+		verif_caract, tam_1, flag_1,tam_2, flag_2 = Caracteristicas(caracteristicas)
+		numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,arquivo, nome, verif_caract,tam_1, flag_1, tam_2, flag_2)
+		# print(len(numeros_paginas))
+		# print(len(nome_doc))
+		# print(len(nomes_pastas))
+		# print(len(txt_unific))
+		# print(nomes_pastas)
+		# z= input("")
+		return numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines
+	else:
+		return numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines
+
+
+			
 	
 
 ###############################################################################
@@ -274,7 +342,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 	
 
 
-	print("a página maior é",max(numeros_paginas))
+	# print("a página maior é",max(numeros_paginas))
 	# print('qtdade textos',len(txt_unific))
 	# print('qtdade num_pag',len(numeros_paginas))
 	# print('qtdade nomes_docs',len(nome_doc))
@@ -362,7 +430,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 		### se o bbox for do outro lado ele aceita uma...tenho que inserir esse atributo na característica
 		else:	
 			if re.search("NADATEM",txt,re.IGNORECASE):
-				pular == True 
+				pular = True 
 			else:	
 				if len(publicacoes)>=1 and pular == False:
 					# if num == 15:
@@ -448,7 +516,8 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 		"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
 
 		# gera o csv com o DF final
-		print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
+		# print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
+		# z = input("")
 
 		dir_path = str(os.path.dirname(os.path.realpath(__file__)))
 		path = dir_path + f'\Diarios_processados_RS_csv_'+str(ano)
