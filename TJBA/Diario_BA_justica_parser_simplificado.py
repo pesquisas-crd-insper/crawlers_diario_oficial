@@ -9,16 +9,25 @@ from datetime import datetime
 import json
 import time
 from pathlib import Path
+import jellyfish
 
 
 def Coleta_data(tam,flag,text_dt):
 	
-
-	if tam == "8" and flag == "0" or tam == "9" and flag == "4":
-		dt_diario = re.search('Disponibilização:(\s*.*\d)|disponibilização:(\s.*\.\s)\.*',text_dt).group()
+	# print("está é a string:",text_dt)
+	# print(tam, flag)
+	if tam == "8" and flag == "0" or tam == "9" and flag == "4" or tam == "8" and flag == "4" or tam == "7" and flag == "0" or tam == "9" and flag == "0":
+		dt_diario = re.search('Disponibilização:\s*(.+\d)\.*|disponibilização:(\s*.*\.\s)\.*',text_dt).group()
+		dt_diario_split = dt_diario.split(".")
 		# print("está é a string:",dt_diario)
 		pattern_dt = re.compile("(D|d)isponibilização:")
-		dt_diario = pattern_dt.sub("",dt_diario).strip()
+		if len(dt_diario_split)>1:
+			# print("aqui")
+			dt_diario = pattern_dt.sub("",dt_diario_split[0]).strip()
+		else:
+			# print("outro")
+			dt_diario = pattern_dt.sub("",dt_diario).strip()
+			# print(dt_diario)
 		data_ajust = Convert_data(dt_diario)
 
 	# print(data_ajust)
@@ -28,6 +37,8 @@ def Coleta_data(tam,flag,text_dt):
 
 def Convert_data(dt_ext):
 	
+	# print(dt_ext)
+
 	meses = {
         '1': 'janeiro',
         '2': 'fevereiro',
@@ -43,18 +54,22 @@ def Convert_data(dt_ext):
         '12': 'dezembro'        
     }
 
-	
     #separa o nome do mês e verifica a numeração dele no dict
-
 	nome_mes = re.findall('\sde\s(.*)\sde',dt_ext)[0].strip()
-	for key in meses:
-		if meses[key] == nome_mes:
-			mes = key
+
+	if "ju" in nome_mes:
+		for key in meses:
+			if meses[key] == nome_mes:
+				mes = key
+	else:
+		for key in meses:
+			if jellyfish.levenshtein_distance(meses[key],nome_mes) <= 1:
+				mes = key
 
 	# print(mes)
 
 	#separa o dia		
-	dia = re.findall(',\s*(.\d{1,2}\s)',dt_ext)[0].strip()
+	dia = re.findall(',\s*(\d{1,2}).*\s',dt_ext)[0].strip()
 	# print(dia)
 
 	#separa o trecho do ano e depois o ano		
@@ -74,7 +89,7 @@ def Convert_data(dt_ext):
 	#formata a data	
 	dataFormatada = date.strftime('%d-%m-%Y')
 
-	# print(dataFormatada)
+	print(dataFormatada)
 	# z= input("")
 	
 	return dataFormatada
@@ -98,7 +113,7 @@ def Separar_textos_paginas(ano):
 
 	# iteração das pastas para acessar os arquivos de PDF individualmente
 
-	for b in tqdm(range(len(pastas))):
+	for b in tqdm(range(66,len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
 
@@ -114,7 +129,7 @@ def Separar_textos_paginas(ano):
 			txt_unific = []
 			sem_lines = []
 			
-			print(arquivos[a])
+			print(arquivos[a],pastas[b])
 			nome = os.path.join(nome_pasta, arquivos[a])
 
 
@@ -148,7 +163,7 @@ def Separar_textos_paginas(ano):
 									tam = str(u['size']).split(".")[0]
 									flag =str(u['flags'])
 
-									if num_pag == 1:
+									if num_pag == 1 and data_ajust == 'NADA':
 										if re.search('Disponibilização:(\s*.*\d)|disponibilização:(\s.*\.\s)\.*',u['text']):
 											data_ajust = Coleta_data(tam,flag,str(u['text']))
 										
@@ -175,37 +190,22 @@ def Separar_textos_paginas(ano):
 						
 							if len(txt_block) > 0:
 								txt_fim = " ".join(txt_block)
-								# if num_pag == 1:
-								# 	# print(tam, flag)
-								# 	print(txt_fim)
-								# 	z= input("")
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
 								nome_doc.append(str(arquivos[a]))
 								nomes_pastas.append(data_ajust)
 
-								# if len(txt_unific) != len(nomes_pastas):
-								# 	print("parou!")
-								# 	print(len(txt_unific))
-								# 	print(len(nomes_pastas))
-								# 	print("------------")
-								# 	z= input("")
-
+						
 							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
 							else:
-								# print("entrou no vazio!")
+								
 								txt_fim = "NADATEM"
 								txt_unific.append(txt_fim)
 								numeros_paginas.append(num_pag)
 								nome_doc.append(str(arquivos[a]))
 								nomes_pastas.append(data_ajust)
 
-								# if len(txt_unific) != len(nomes_pastas):
-								# 	print(len(txt_unific))
-								# 	print(len(nomes_pastas))
-								# 	print("------------")
-								# 	print("parou aqui!")
-								# 	z= input("")
+								
 					
 							
 
@@ -226,17 +226,9 @@ def Separar_textos_paginas(ano):
 
 			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
 			# z = input("")
-
-			# print(len(txt_unific))
-			# print(len(nome_doc))
-			# # z= input("")
-			# for item in txt_unific:
-			# 	print(item)
-			# 	z= input("")
 			
 			nomes_pastas = [data_ajust if value=="NADA" else value for value in nomes_pastas]
-			# print(nomes_pastas[:10])
-			# z = input("")
+
 			Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,a)								
 			# return numeros_paginas,	nome_doc, nomes_pastas, txt_unific
 	
@@ -261,9 +253,6 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 	# print('qtdade nomes_docs',len(nome_doc))
 	# print('qtadade nomes_pastas',len(nomes_pastas))
 
-	# # print(numeros_paginas[-1])
-	# print(txt_unific[0])
-	# z= input("")
 	
 	pattern_init = re.compile('ADV:|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d{3}\.\d{4}')
 	pattern_num = re.compile('\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d{3}\.\d{4}')
@@ -281,21 +270,8 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 				vlr = 400
 			text = txt[0:vlr] # fora isso, pesquisar nos 10% primeiros caracteres da publicação
 
-
-		# if num == 1:
-		# 	print(txt)
-		# 	z= input("")
-		# 	if re.search('d{2,7}', txt):
-		# 		print(txt)
-		##início da busca
-
 		
 		if re.search(pattern_init, text): # pesquisa o padrão em todas as linhas da publicação (dentro do limite de caracteres)
-
-			# if num == 1:
-			# 	print(txt)
-			# 	z= input("")
-			# # salva nas listas a publicação e as demais informações dela (página, documento, pasta)
 
 
 			publicacoes.append(txt) 
@@ -308,7 +284,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 	
 		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
 		else:
-			if re.search("NUBENTE:|CONVIVENTE:",txt,re.IGNORECASE):
+			if re.search("NUBENTE:|CONVIVENTE:|EDITA(L|IS) DE PROCLAMAS",txt,re.IGNORECASE):
 				pular = True
 			else:
 				if len(publicacoes)>=1 and re.search("^Disponibilização|NADATEM",txt,re.IGNORECASE) == None and pular == False: #verifica se atingiu a quantidade máxima de unificações (4) sem encontrar um padrão CNJ ou se é a primeira da lista
@@ -337,7 +313,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 	if len(publicacoes) == 0:
 		print("arquivo", num_arq,"vazio")
 	else:
-		print("tinhamos", len(publicacoes))
+		# print("tinhamos", len(publicacoes))
 		publicacoes_l = []
 		num_pags_l = []
 		nome_docs_l = []
@@ -367,7 +343,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 					nome_pst_l.append(nome_pst[n])
 			except:
 				pass
-		print("agora temos",len(publicacoes_l))
+		# print("agora temos",len(publicacoes_l))
 		
 		# print(num_pags_l[-1])
 		# print(publicacoes_l[-1])
@@ -386,8 +362,8 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 		df_textos_paginas["representantes"] = None
 		df_textos_paginas["assuntos"] = None
 
-		print(df_textos_paginas[["numero_processo", "publicacao","numeros_paginas","nome_documento"]])
-		print("Temos",len(df_textos_paginas),"nesse data frame")
+		# print(df_textos_paginas[["numero_processo", "publicacao","numeros_paginas","nome_documento"]])
+		# print("Temos",len(df_textos_paginas),"nesse data frame")
 
 
 		############ CONFERÊNCIA AMOSTRAL ALEATÓRIA - DESCOMENTAR CASO QUEIRA UMA AMOSTRA ALEATÓRIA DOS RECORTES  - APERTAR ENTER A CADA PUBLICAÇÃO
