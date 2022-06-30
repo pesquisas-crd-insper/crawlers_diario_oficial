@@ -40,9 +40,9 @@ def downloads_done(path_final):
 		if cont == 1 or desist == 4:  # contagem do documento ou das desistências
 			break
 		else:
-			print("aguardando 15 seg")   # tempo de 15 segundos para cada tentativa
+			print("aguardando 8 seg")   # tempo de 15 segundos para cada tentativa
 			print("-----")
-			time.sleep(15)
+			time.sleep(8)
 			cont = 0
 			total = os.listdir(path_final) #lista os casos no diretório
 			
@@ -101,6 +101,7 @@ def Baixar_diarios(ano, datas, links):
 
 		# URL recebendo os elemento da data e o link
 		link_final = 'https://diario.tjac.jus.br/edicoes.php?Ano='+str(ano)+'&Mes='+mes+'&PDF='+link
+		print('https://diario.tjac.jus.br/edicoes.php?Ano='+str(ano)+'&Mes='+mes+'&PDF='+str(link))
 		
 
 		# requisição do site 
@@ -169,13 +170,23 @@ def Gera_dias_uteis():
 		mes = int(item.strftime("%m"))
 		dia = int(item.strftime("%d"))
 		if cal.is_working_day(date(ano,mes,dia)):
-			data_str = str(item).replace("-","")[:9].strip()
-			datas_convert.append(data_str)
-			
-			data = item.strftime("%d/%m/%Y")
-			# print("date:",data)
-			datas.append(data)
+			if ano == 2012:
+				# print("é 2012")
+				data = item.strftime("%d/%m/%Y")
+				datas.append(data)
+				data_str = str(data).replace("/","")
+				data_str = data_str[:4]+data_str[6:8]
+				datas_convert.append(data_str)
 
+			else:
+				data_str = str(item).replace("-","")[:9].strip()
+				datas_convert.append(data_str)
+				
+				data = item.strftime("%d/%m/%Y")
+				# print("date:",data)
+				datas.append(data)
+
+	print(datas_convert)			
 
 	return datas, datas_convert, ano
 
