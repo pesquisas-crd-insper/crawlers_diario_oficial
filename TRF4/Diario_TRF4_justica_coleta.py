@@ -93,8 +93,8 @@ def gerar_numeros():
     fim = int(inic_fim[1])# documento final disponível
 
     # gera o range do ano
-    atual = 2791
-    for k in range(2791, fim+1):
+    atual = inicio
+    for k in range(inicio, fim+1):
         lista_num.append(atual)
         atual = atual+1
 
