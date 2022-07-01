@@ -11,21 +11,8 @@ import time
 from pathlib import Path
 
 
-# def Coleta_data(tam,flag,text_dt):
-	
-
-# 	if tam == "8" and flag == "0" or tam == "9" and flag == "4":
-# 		dt_diario = re.search('Disponibilização:(\s*.*\d)|disponibilização:(\s.*\.\s)\.*',text_dt).group()
-# 		# print("está é a string:",dt_diario)
-# 		pattern_dt = re.compile("(D|d)isponibilização:")
-# 		dt_diario = pattern_dt.sub("",dt_diario).strip()
-# 		data_ajust = Convert_data(dt_diario)
-
-# 	# print(data_ajust)
-# 	return data_ajust		
 
 ####################### função para converter a data ####################
-
 def Convert_data(dt_ext):
 	
 	meses = {
@@ -74,7 +61,7 @@ def Convert_data(dt_ext):
 	#formata a data	
 	dataFormatada = date.strftime('%d-%m-%Y')
 
-	# print(dataFormatada)
+	print(dataFormatada)
 	# z= input("")
 	
 	return dataFormatada
@@ -118,7 +105,31 @@ def separacao_padroes(num_caract,txt):
 
 	return publis_l
 
+
 ##################################################################################################
+def Caracteristicas(caracteristicas):
+
+	caract = pd.DataFrame()
+	caract["valores"] = caracteristicas							
+	caract = pd.DataFrame(caract.groupby(["valores"])["valores"].count())
+	caract.columns = ["quantidade"]
+	caract = caract.sort_values(by=['quantidade'],ascending=False)						
+	caract = caract.reset_index()
+
+	# print(caract)
+	# print(caract.sort_values(by=['quantidade'],ascending=False))
+
+	tam_1 = caract["valores"][0][0]
+	# print(tam_1)
+	# z= input("")
+	flag_1 = caract["valores"][0][1]
+	tam_2 = caract["valores"][1][0]
+	flag_2 = caract["valores"][1][1]
+	return 1, tam_1, flag_1, tam_2, flag_2
+
+
+
+###################################################################################################
 
 							# Função para separar os textos das publicações
 
@@ -136,148 +147,149 @@ def Separar_textos_paginas(ano):
 
 	# iteração das pastas para acessar os arquivos de PDF individualmente
 
+	# falta de 0 a 10 em 2019
+
 	for b in tqdm(range(len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
 		arquivos = os.listdir(nome_pasta)
 
 
-		## lista para verificar as flags escolhidas
-		caracteristicas =[]
-
 		for a in range(len(arquivos)):
 			
-			numeros_paginas =[]
-			nome_doc = []
-			nomes_pastas =[]
-			txt_unific = []
-			sem_lines = []
-			
-			print(arquivos[a])
+			print(nome_pasta,":",arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
+			# print(nome)
 
-
-			# contagem dos números das páginas
-			num_pag = 0
-			data_ajust = 'NADA'
-
-			with fitz.open(nome) as pdf:
-				for pagina in pdf:
-					num_pag = num_pag + 1
-					# print("\n\n\n Estamos na página",num_pag,"\n\n\n\n documento:",arquivos[a],"\n\n\n Na pasta:",nome_pasta,"\n\n\n")
-					
-					blocks = pagina.get_text("dict")['blocks'] # método que divide o texto em blocos no formato dict
-	
-				
-					for o in range(len(blocks)):
-						
-											
-						# print(blocks[o])
-						# z= input("")
-						try: # elimina os blocos que não contém "lines" e consequentemente não tem textos
-							
-							lines = blocks[o]["lines"] # separa as linhas
-							
-							txt_block = []	
-							
-							for x in range(len(lines)):
-								spans = lines[x]["spans"] # separa os spans
-								
-								for u in spans:
-									tam = str(u['size']).split(".")[0]
-									flag =str(u['flags'])
-
-									# if num_pag == 1:
-									# 	print(tam, flag)
-									# 	print(u['text'])
-									# 	z= input("")
-
-									if int(ano) <= 2013:	
-										if num_pag == 1 and tam == "10" and flag =="4":
-											if re.search('\d\sde\s.+de\s\d{4}',u['text']):
-												data_ajust = Convert_data(str(u['text']))
-											
-										## para o teste previo de verificar as flags	
-										caracteristicas.append((tam,flag)) 
-										
-										if tam == "8" and flag == "0" or tam == "8" and flag == "16":
-											# if num_pag == 1:
-											# print(u['text']) 
-											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-											# print(txt_block)
-											# z = input('')
-									else:
-										if num_pag == 1 and tam == "7" and flag =="4" or tam == "8" and flag =="4":
-											if re.search('\d{1,2}\sde\s.+',u['text']):
-												parte_data = re.search('\d{1,2}\sde\s.+',u['text']).group().strip()
-												str_data = parte_data+" de "+str(ano)
-												# print(str_data)
-												# z= input("")
-												data_ajust = Convert_data(str_data)
-											
-										## para o teste previo de verificar as flags	
-										caracteristicas.append((tam,flag))
-										if tam == "9" and flag == "4":
-											# if num_pag == 1:
-											# print(u['text']) 
-											txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
-											# print(txt_block)
-											# z = input('')
-
-									## para verificar o que aparece nos padrões das flags
-							
-									# if tam == "7" and flag == "0":
-									# 	print("\n\n PADRÃO 2\n\n",num_pag,"\n\n",u['text'])
-									# 	z = input("")
-									# # if tam == "9" and flag == "4":
-									# 	print("\n\n PADRÃO 3\n\n",u['text'])	
-									# 	z = input("")
-
-						
-							if len(txt_block) > 0:
-								txt_fim = " ".join(txt_block)
-								txt_unific.append(txt_fim)
-								numeros_paginas.append(num_pag)
-								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append(data_ajust)
-
-						
-							# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
-							else:
-								
-								txt_fim = "NADATEM"
-								txt_unific.append(txt_fim)
-								numeros_paginas.append(num_pag)
-								nome_doc.append(str(arquivos[a]))
-								nomes_pastas.append(data_ajust)
-
-								
-					
-							
-
-						# se não tiver as linhas, salva em outra lista - somente para conferência, não tem utilidade.					
-						
-						except:
-							sem_lines.append(blocks[o]["number"])
-
-
-
-			# contabilização da quantidade de flags mais frequentes
-									
-			# nome_acao = pd.DataFrame()
-			# nome_acao["Ação"] = caracteristicas							
-			# nome_acao = pd.DataFrame(nome_acao.groupby(["Ação"])["Ação"].count())
-			# nome_acao.columns = ["quantidade"]
-			# nome_acao = nome_acao.reset_index()						
-
-			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
-			# z = input("")
-			
+			numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,str(arquivos[a]),nome, 0)
+			data_ajust = nomes_pastas[-1]
 			nomes_pastas = [data_ajust if value=="NADA" else value for value in nomes_pastas]
-			# print(nomes_pastas[:10])
-
 			Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,a)								
 			# return numeros_paginas,	nome_doc, nomes_pastas, txt_unific
-	
+
+
+
+def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, flag_2=0):
+
+	# print("os tamanhos são:",tam_1, flag_1,tam_2,flag_2)
+	numeros_paginas =[]
+	nome_doc = []
+	nomes_pastas =[]
+	txt_unific = []
+	sem_lines = []
+
+	## lista para verificar as flags escolhidas
+	caracteristicas =[]
+
+	# contagem dos números das páginas
+	num_pag = 0
+	data_ajust = 'NADA'
+
+	with fitz.open(nome) as pdf:
+		for pagina in pdf:
+			num_pag = num_pag + 1
+			# print("\n\n\n Estamos na página",num_pag,"\n\n\n\n documento:",arquivos[a],"\n\n\n Na pasta:",nome_pasta,"\n\n\n")
+			
+			blocks = pagina.get_text("dict")['blocks'] # método que divide o texto em blocos no formato dict
+			# print(blocks)
+			# z= input("")
+
+		
+			for o in range(len(blocks)):
+				
+									
+				# print(blocks[o])
+				# z= input("")
+				try: # elimina os blocos que não contém "lines" e consequentemente não tem textos
+					
+					lines = blocks[o]["lines"] # separa as linhas
+					
+					txt_block = []	
+					
+					for x in range(len(lines)):
+						spans = lines[x]["spans"] # separa os spans
+						
+						for u in spans:
+							tam = str(u['size']).split(".")[0]
+							flag =str(u['flags'])
+							caracteristicas.append((tam,flag))
+							
+							# if num_pag == 1:
+							# 	print(u['text'])
+							# 	z = input("")
+						
+							if num_pag == 1:
+								if int(ano) <= 2013:
+									if re.search('\d\sde\s.+de\s\d{4}',u['text']) and tam == "10" and flag =="4":
+										data_ajust = Convert_data(str(u['text']))
+								else:	
+									if re.search('\d{1,2}\sde\s.+',u['text']):
+										parte_data = re.search('\d{1,2}\sde\s.+',u['text']).group().strip()
+										str_data = parte_data+" de "+str(ano)
+										# print(str_data)
+										# z= input("")
+										data_ajust = Convert_data(str_data)
+
+									
+							if verif_caract == 1:
+								# print("***************")
+								# print()
+								# print("os tamanhos são:",tam_1, flag_1,tam_2,flag_2)
+								# print()
+								# print("***************")
+								if tam == str(tam_1) and flag == str(flag_1) or tam == str(tam_2) and flag == str(flag_2):
+									# print("Pegou!")
+									txt_block.append(u['text'].strip())
+							else:
+								pass
+
+							# if tam == "7" and flag == "0" or tam == "7" and flag == "4":
+							# 	txt_block.append(u['text'].strip())
+								
+	# 						
+	# 						## para verificar o que aparece nos padrões das flags
+					
+	# 						# if tam == "7" and flag == "16":
+	# 						# 	print("\n\n PADRÃO 2\n\n",num_pag,"\n\n",u['text'])
+	# 						# 	z = input("")
+	# 						# # if tam == "9" and flag == "4":
+	# 						# 	print("\n\n PADRÃO 3\n\n",u['text'])	
+	# 						# 	z = input("")
+
+				
+					if len(txt_block) > 0:
+						txt_fim = " ".join(txt_block)
+						txt_unific.append(str(txt_fim))
+						numeros_paginas.append(num_pag)
+						nome_doc.append(str(arquivo))
+						nomes_pastas.append(data_ajust)
+
+				
+					# caso o texto do bloco seja vazio, unifica um texto vazio para manter a mesma quantidade d eitens da lista
+					else:	
+						txt_fim = "NADATEM"
+						txt_unific.append(txt_fim)
+						numeros_paginas.append(num_pag)
+						nome_doc.append(str(arquivo))
+						nomes_pastas.append(data_ajust)
+
+	# 			# se não tiver as linhas, salva em outra lista - somente para conferência, não tem utilidade.					
+				
+				except:
+					sem_lines.append(blocks[o]["number"])
+
+	if verif_caract == 0:				
+		verif_caract, tam_1, flag_1,tam_2, flag_2 = Caracteristicas(caracteristicas)
+		numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,arquivo, nome, verif_caract,tam_1, flag_1, tam_2, flag_2)
+		# print(len(numeros_paginas))
+		# print(len(nome_doc))
+		# print(len(nomes_pastas))
+		# print(len(txt_unific))
+		# print(nomes_pastas)
+		# z= input("")
+		return numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines
+	else:
+		return numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines
+
 
 ###############################################################################
 
@@ -293,7 +305,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 	nome_pst = []
 
 	
-	print("a página maior é",max(numeros_paginas))
+	# print("a página maior é",max(numeros_paginas))
 	# print('qtdade textos',len(txt_unific))
 	# print('qtdade num_pag',len(numeros_paginas))
 	# print('qtdade nomes_docs',len(nome_doc))
@@ -454,7 +466,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 						del publicacoes_l[-1] # deleta da lista a publicação anterior
 						publicacoes_l.append(publicacoes[n])
 				
-		print("agora temos",len(publicacoes_l))
+		# print("agora temos",len(publicacoes_l))
 		# print(publicacoes_l[-1])
 
 
@@ -480,14 +492,14 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq):
 		df_textos_paginas["numeros_paginas"] = num_pags_l
 		df_textos_paginas["nome_documento"] = nome_docs_l
 		df_textos_paginas["nomes_pastas"] = nome_pst_l
-		df_textos_paginas["estado"] = "BA"
+		df_textos_paginas["estado"] = "SC"
 		df_textos_paginas["tipos_processuais"] = None
 		df_textos_paginas["comarcas"] = None
 		df_textos_paginas["representantes"] = None
 		df_textos_paginas["assuntos"] = None
 
-		print(df_textos_paginas[["numero_processo", "publicacao","numeros_paginas","nome_documento"]])
-		print("Temos",len(df_textos_paginas),"nesse data frame")
+		# print(df_textos_paginas[["numero_processo", "publicacao","numeros_paginas","nomes_pastas"]])
+		# print("Temos",len(df_textos_paginas),"nesse data frame")
 
 
 		############ CONFERÊNCIA AMOSTRAL ALEATÓRIA - DESCOMENTAR CASO QUEIRA UMA AMOSTRA ALEATÓRIA DOS RECORTES  - APERTAR ENTER A CADA PUBLICAÇÃO
