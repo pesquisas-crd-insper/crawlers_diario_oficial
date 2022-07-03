@@ -52,7 +52,7 @@ def downloads_done(path_final):
 			else:
 				for i in os.listdir(path_final):
 					nome = str(i)
-					if nome[-3:] == "pdf":  # confere os downloads finalizados
+					if "crdown" not in nome and nome[-3:] == "pdf":  # confere os downloads finalizados
 						cont = cont+1
 						
 				desist = desist + 1 # conta as tentativas
@@ -63,6 +63,8 @@ def downloads_done(path_final):
 	print("downloads finalizados")
 	return
 
+
+#####################################################################################################################
 
 def Baixar_diarios(ano):
 
@@ -143,14 +145,16 @@ def Baixar_diarios(ano):
 				        # pega o nome do tribunal
 				        index_trib = tribunais.index(tribunal)
 				        nome_tribunal = nomes_tribunais[index_trib]
-
+				        print("***********************")
 				        print(nome_tribunal)
+				        print()
+				        print("***********************")
 				        for link,data in zip(lista,datas):
 				        	texto_data = str(data.text.encode("utf-8").decode("utf-8"))
 				        	data_ajus = texto_data.split(" ")[-1]
 				        	data_ajus = data_ajus.replace("/","-")
-				        	print(texto_data.split(" ")[-1])
-				        	print(texto_data)
+				        	print(data_ajus)
+				        	# print(texto_data)
 				        	
 				        	# cria o diretório da pasta
 				        	path_final = dir_path + f'\Diarios_TRF5_'+nome_tribunal+"_"+ano+'\\'+data_ajus
@@ -168,30 +172,18 @@ def Baixar_diarios(ano):
 				        			nome_final = os.path.join(path,nome_tribunal+"_"+ano+'_'+data_ajus+".pdf")
 				        			os.rename(source,nome_final)
 				        			shutil.move(nome_final,path_final)
-				        	time.sleep(4)		
+				        	time.sleep(4)
+				        	print("                ---------------------------")		
                             
 
 	driver.quit()                        
-
-
-
-
-
-
-
-
-
-	# ## pegar a data da página
-	# data_pasta = data.replace("/","-")
-	# path_final = dir_path + f'\Diarios_TRF5_'+ano+'\\'+data_pasta
-	# Path(path_final).mkdir(parents=True, exist_ok=True)
 
 
 # Chama as funções
 
 
 def main():
-	ano = input("digite o ano(ex: 2012): ")
+	ano = input("digite o ano(ex: 2012):")
 	Baixar_diarios(ano)
 
 #################################
