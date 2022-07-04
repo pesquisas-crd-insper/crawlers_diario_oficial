@@ -102,13 +102,13 @@ def Separar_textos_paginas(ano):
 
 									# caracteristicas.append((tam,flag))
 
-									if tam == "8" and flag == "0" or tam == "8" and flag =="16": 
+									if tam == "8" and flag == "0" or tam == "8" and flag =="16" or tam == "8" and flag == "4": 
 										txt_block.append(u['text'].strip()) # separa todos os textos de cada bloco e salva na lista para unificação
 										
 
 									# para verificar o que aparece nos padrões das flags
 							
-									# if tam == "6" and flag == "0":
+									# if tam == "5" and flag == "4":
 									# 	print("\n\n PADRÃO 2\n\n",u['text'])
 									# 	z = input("")
 									# if tam == "9" and flag == "4":
@@ -156,7 +156,7 @@ def Separar_textos_paginas(ano):
 
 			# print(nome_acao.sort_values(by=['quantidade'],ascending=False))
 			# nome_acao.sort_values(by=['quantidade'],ascending=False, inplace= True)
-			# nome_acao.to_excel("valores_flags.xlsx", index = False)
+			# # nome_acao.to_excel("valores_flags.xlsx", index = False)
 			# z = input("")
 
 
@@ -224,7 +224,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 	
 
 
-	print("a página maior é",max(numeros_paginas))
+	# print("a página maior é",max(numeros_paginas))
 	# print('qtdade textos',len(txt_unific))
 	# print('qtdade num_pag',len(numeros_paginas))
 	# print('qtdade nomes_docs',len(nome_doc))
@@ -242,10 +242,10 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 		# text = txt[:150].replace("\n","")
 		# print(text)
 		
-		# if num == 15:
+		# if num == 1:
 		# 	print(txt)
 		# 	z = input("")
-	
+		
 		## início da busca
 		txt = txt.replace("\n","")
 		
@@ -285,21 +285,12 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 					if re.search(pattern_init,partes[f][:40]):
 						nm_proc = re.search(pattern_init,partes[f][:40]).group().replace(" ","") # se encontrar o padrão completo, separa o número
 						num_process.append(nm_proc) # salva na lista
-						try:
-							if len(ultimo) < 130:
-								partes[f] = ultimo +"\n"+partes[f]
-							publicacoes.append(partes[f]) 
-							num_pags.append(num)
-							nome_docs.append(doc)
-							nome_pst.append(pst)
-							pular = False
-						except:
-							publicacoes.append(partes[f]) 
-							num_pags.append(num)
-							nome_docs.append(doc)
-							nome_pst.append(pst)
-							pular = False
-					
+						publicacoes.append(partes[f]) 
+						num_pags.append(num)
+						nome_docs.append(doc)
+						nome_pst.append(pst)
+						pular = False
+				
 						
 					else:
 						if len(publicacoes) > 0:
@@ -326,21 +317,12 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 
 				#################################
 				#### toda vez que achar um padrão sempre pegar o anterior se o anterior não for um vazio #########
-				try:
-					if len(ultimo) < 130:
-						txt = ultimo +"\n"+txt
-
-					publicacoes.append(txt) 
-					num_pags.append(num)
-					nome_docs.append(doc)
-					nome_pst.append(pst)
-					pular = False
-				except:
-					publicacoes.append(txt) 
-					num_pags.append(num)
-					nome_docs.append(doc)
-					nome_pst.append(pst)
-					pular = False					
+			
+				publicacoes.append(txt) 
+				num_pags.append(num)
+				nome_docs.append(doc)
+				nome_pst.append(pst)
+				pular = False					
 
 
 		# caso ele não encontre o padrão CNJ e essa publicação não seja a primeira da lista 
@@ -349,20 +331,17 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 		else:
 			# if num == 15:
 			# 	print("----",txt)
-			if 5 < len(txt) < 130 and re.search("id:|expediente|despacho|\.",txt,re.IGNORECASE) == None:
-				ultimo = txt
-			else:
-				if re.search("id:",txt,re.IGNORECASE):
-					pular = True
-				try:
-					if len(publicacoes)>=1 and re.search("Data de Disponibilização:|data de publicação:",txt,re.IGNORECASE) == None and pular == False:
-						# if num == 15:
-						# 	print("*****",txt)
-						txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
-						del publicacoes[-1] # deleta da lista a publicação anterior
-						publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
-				except:
-					pass
+			if re.search("id:",txt,re.IGNORECASE):
+				pular = True
+			try:
+				if len(publicacoes)>=1 and re.search("Data de Disponibilização:|data de publicação:",txt,re.IGNORECASE) == None and pular == False:
+					# if num == 15:
+					# 	print("*****",txt)
+					txt = publicacoes[-1]+" "+txt  # unifica o texto atual com a publicação anterior
+					del publicacoes[-1] # deleta da lista a publicação anterior
+					publicacoes.append(txt) # junta a nova publicação unificada na lista (o número da página e o nome do doc se mantém onde a publicação começa)
+			except:
+				pass
 
 		
 		
@@ -440,7 +419,7 @@ def Juntar_blocks(numeros_paginas,nome_doc, nomes_pastas, txt_unific,ano,num_arq
 		"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
 
 		# gera o csv com o DF final
-		print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
+		# print(df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas"]])
 
 		dir_path = str(os.path.dirname(os.path.realpath(__file__)))
 		path = dir_path + f'\Diarios_processados_RJ_csv_'+str(ano)
