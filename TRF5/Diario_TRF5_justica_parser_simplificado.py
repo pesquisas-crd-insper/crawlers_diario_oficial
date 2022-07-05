@@ -265,7 +265,7 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq,e
 	# print('qtdade nomes_docs',len(nome_doc))
 	# print('qtadade nomes_pastas',len(nomes_pastas))
 	# z = input("")
-	
+
 	pattern_verif = re.compile("\d{4,7}-")
 	pattern_sepa = re.compile("\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d{3}\.\d{4}|\d{4}\.\d{2}\.\d{2}\.\d{3,7}-|\d{2}\.\d{2}\.\d{3,7}-\d|\d{4,7}-")
 	pattern_init = re.compile("\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}|\d{2,7}(?:-|.{2}).\d{2}\.\d{4}\.\d{3}\.\d{4}|\d{4}\.\d{2}\.\d{2}\.\d{3,7}-|\d{2}\.\d{2}\.\d{3,7}-\d|\d{4,7}-")
@@ -456,15 +456,15 @@ def Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,num_arq,e
 		else:
 
 			##### PARA CONFERÊNCIA - DESCOMENTAR CASO QUEIRA VERIFICAR O CORTE FINAL DAS PUBLICAÇÕES NA ORDEM - APERTAR ENTER A CADA PUBLICAÇÃO
-			# qtdade = 0
-			# for item,num in zip(publicacoes_l,num_pags_l):
-			# 	qtdade = qtdade+1
-			# 	print("Quantidade avaliada:",qtdade)
-			# 	# if num >= 553:
-			# 	print("página", num)
-			# 	print(item)
-			# 	print("-----------------")
-			# 	z = input('')
+			qtdade = 0
+			for item,num in zip(publicacoes_l,num_pags_l):
+				qtdade = qtdade+1
+				print("Quantidade avaliada:",qtdade)
+				# if num >= 553:
+				print("página", num)
+				print(item)
+				print("-----------------")
+				z = input('')
 		
 			# print(num_pags_l[-1])
 			# print(publicacoes_l[-1])
@@ -565,6 +565,7 @@ def main():
 	print()
 	print("*"*20)
 	estado = input("digite a sigla do Estado escolhido (Ex:TRF5):")
+	estado = estado.upper()
 	data_frames = Separar_textos_paginas(ano, estado)
 	fim = time.time()
 	tempo_total = (fim-ini)//60 #calcula o tempo decorrido
