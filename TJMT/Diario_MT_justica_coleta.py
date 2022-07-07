@@ -131,7 +131,7 @@ def Baixar_diarios(ano, datas, cadernos, quantidade):
                            ################ Função para ler o JSON e coletar os nomes dos documentos para download ############## 
 
 
-def ler_json(url):
+def ler_json(url,ano):
 															# exemplo de URL para registro
 	# url = "https://dje-api.tjmt.jus.br/api/diarioOficial/edicoes?periodoDataDe=2019-01-01T02:00:00.000Z&periodoDataAte=2019-12-31T03:00:00.000Z&indicePagina=0&quantidadePagina=242"
 	
@@ -160,7 +160,10 @@ def ler_json(url):
 		for docs in list_docs:
 			data = str(docs ["dataPublicacao"][:10])
 			date_list.append(data)
-			caderno = str(docs['enderecoPublicacao'])
+			if int(ano) < 2015:
+				caderno = str(docs['enderecoCaderno'])
+			else:
+				caderno = str(docs['enderecoPublicacao'])
 			cadernos.append(caderno)
 		list_cadernos.append(cadernos)
 		list_date_list.append(date_list)
@@ -188,7 +191,7 @@ def main():
 	url = linhas[linha]
 
 	## ler a linha correspondente ao ano e enviar a url pra função que faz a requisção do json
-	cadernos, date_lists, quantidades = ler_json(url)
+	cadernos, date_lists, quantidades = ler_json(url,ano)
 
 
 	# com as listas geradas pela função anterior, inicia o processo de downloads
