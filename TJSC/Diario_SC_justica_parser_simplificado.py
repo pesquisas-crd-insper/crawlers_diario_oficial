@@ -30,7 +30,7 @@ def Convert_data(dt_ext):
         '12': 'dezembro'        
     }
 
-	
+	dt_ext = dt_ext.lower()
     #separa o nome do mês e verifica a numeração dele no dict
 
 	nome_mes = re.findall('\sde\s(.*)\sde',dt_ext)[0].strip()
@@ -41,7 +41,7 @@ def Convert_data(dt_ext):
 	# print(mes)
 
 	#separa o dia		
-	dia = re.findall(',*\s*(.\d{1,2}\s)',dt_ext)[0].strip()
+	dia = re.findall(r',*\s*(.*\d{1,2}\s)',dt_ext)[0].strip()
 	# print(dia)
 
 	#separa o trecho do ano e depois o ano		
@@ -130,6 +130,42 @@ def Caracteristicas(caracteristicas):
 
 
 ###################################################################################################
+def data(nome,data_ajust):
+
+
+	with fitz.open(nome) as pdf:
+		for n in range(1):
+			
+			texto = pdf[1].get_text() # método que divide o texto em blocos no formato dict
+			partes = texto.split("\n")
+			for part in partes:
+				if data_ajust == "NADA":
+					if re.search(r'\d\sde\s.+de\s\d{4}',part):
+						data_ajust = Convert_data(part)
+						if re.search(r'\d{2}-\d{2}-\d{4}', data_ajust):
+							pass
+						else:
+							data_ajust = 'NADA'
+							
+					else:		
+						if re.search(r'\d{1,2}\sde\s.+',part) and data_ajust == 'NADA':
+							# print("pegou!")
+							parte_data = re.search(r'\d{1,2}\sde\s.+',part).group().strip()
+							str_data = parte_data+" de "+str(ano)
+							# print(str_data)
+							# z= input("")
+							data_ajust = Convert_data(str_data)
+							if re.search('\d{2}-\d{2}-\d{4}', data_ajust):
+								pass
+							else:
+								data_ajust = 'NADA'
+				else:
+					# print(data_ajust)
+					return data_ajust					
+		
+
+
+
 
 							# Função para separar os textos das publicações
 
@@ -147,7 +183,7 @@ def Separar_textos_paginas(ano):
 
 	# iteração das pastas para acessar os arquivos de PDF individualmente
 
-	# falta de 0 a 10 em 2019
+	# falta fazer o 25
 
 	for b in tqdm(range(len(pastas))):
 		nome_pasta = os.path.join(diret, pastas[b])
@@ -158,17 +194,27 @@ def Separar_textos_paginas(ano):
 			
 			print(nome_pasta,":",arquivos[a])
 			nome = os.path.join(nome_pasta, arquivos[a])
+			if a == 0:
+				data_ajust = 'NADA'
+			else:
+				data_ajust = data_ajust	
 			# print(nome)
 
-			numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,str(arquivos[a]),nome, 0)
+			numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(data_ajust,ano,str(arquivos[a]),nome, 0)
+			
 			data_ajust = nomes_pastas[-1]
+			if data_ajust == 'NADA':
+				data_ajust = data(nome,data_ajust)
+			
+			
 			nomes_pastas = [data_ajust if value=="NADA" else value for value in nomes_pastas]
+			
 			Juntar_blocks(numeros_paginas,nome_doc,nomes_pastas,txt_unific,ano,a)								
 			# return numeros_paginas,	nome_doc, nomes_pastas, txt_unific
 
 
 
-def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, flag_2=0):
+def processa_texto(data_ajust, ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, flag_2=0):
 
 	# print("os tamanhos são:",tam_1, flag_1,tam_2,flag_2)
 	numeros_paginas =[]
@@ -182,7 +228,7 @@ def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, f
 
 	# contagem dos números das páginas
 	num_pag = 0
-	data_ajust = 'NADA'
+	
 
 	with fitz.open(nome) as pdf:
 		for pagina in pdf:
@@ -192,7 +238,8 @@ def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, f
 			blocks = pagina.get_text("dict")['blocks'] # método que divide o texto em blocos no formato dict
 			# print(blocks)
 			# z= input("")
-
+			# print("a data ajustada eh",data_ajust,"a pagina eh", num_pag)
+			# z= input("")
 		
 			for o in range(len(blocks)):
 				
@@ -213,21 +260,40 @@ def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, f
 							flag =str(u['flags'])
 							caracteristicas.append((tam,flag))
 							
-							# if num_pag == 1:
+							# if num_pag ==1:# and re.search(r'\d\sde\s.+de\s\d{4}',u['text']) :
+							# 	print((tam,flag))
 							# 	print(u['text'])
 							# 	z = input("")
 						
-							if num_pag == 1:
-								if int(ano) <= 2013:
-									if re.search('\d\sde\s.+de\s\d{4}',u['text']) and tam == "10" and flag =="4":
-										data_ajust = Convert_data(str(u['text']))
-								else:	
-									if re.search('\d{1,2}\sde\s.+',u['text']):
-										parte_data = re.search('\d{1,2}\sde\s.+',u['text']).group().strip()
+							if num_pag == 1 and data_ajust == 'NADA' or num_pag == 2 and data_ajust == 'NADA':
+								if re.search(r'\d\sde\s.+de\s\d{4}',u['text']) and tam == "10" and flag =="4":
+									data_ajust = Convert_data(str(u['text']))
+									if re.search(r'\d{2}-\d{2}-\d{4}', data_ajust):
+										pass
+									else:
+										data_ajust = 'NADA'
+										
+								else:		
+									if re.search(r'\d{1,2}\sde\s.+',u['text']) and data_ajust == 'NADA':
+										# print("pegou!")
+										parte_data = re.search(r'\d{1,2}\sde\s.+',u['text']).group().strip()
 										str_data = parte_data+" de "+str(ano)
 										# print(str_data)
 										# z= input("")
 										data_ajust = Convert_data(str_data)
+										if re.search('\d{2}-\d{2}-\d{4}', data_ajust):
+											pass
+										else:
+											data_ajust = 'NADA'
+
+							if num_pag > 2 and data_ajust == 'NADA':
+								if re.search(r'\d{2}\s*\|\d{2}',u['text']):
+									data_ajust = re.search(r'\d{2}\s*\|\d{2}',u['text']).group().strip()
+									data_ajust = data_ajust.replace('|',"-")
+									data_ajust = data_ajust.replace(" ","")
+									data_ajust = str(data_ajust)+"-"+str(ano)
+									print(data_ajust)
+
 
 									
 							if verif_caract == 1:
@@ -279,7 +345,7 @@ def processa_texto(ano,arquivo, nome, verif_caract, tam_1=0, flag_1=0,tam_2=0, f
 
 	if verif_caract == 0:				
 		verif_caract, tam_1, flag_1,tam_2, flag_2 = Caracteristicas(caracteristicas)
-		numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(ano,arquivo, nome, verif_caract,tam_1, flag_1, tam_2, flag_2)
+		numeros_paginas, nome_doc, nomes_pastas, txt_unific, sem_lines = processa_texto(data_ajust, ano,arquivo, nome, verif_caract,tam_1, flag_1, tam_2, flag_2)
 		# print(len(numeros_paginas))
 		# print(len(nome_doc))
 		# print(len(nomes_pastas))
