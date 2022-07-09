@@ -86,7 +86,7 @@ def Baixar_diarios(ano, datas, cadernos, quantidade):
 
 	# abre o driver
 
-	chromedriver_path = Path(str(Path(__file__).parent.resolve()) + '\software\chromedriver.exe')
+	# chromedriver_path = Path(str(Path(__file__).parent.resolve()) + '\software\chromedriver.exe')
 	
 	# ajsuta a data
 	mes = str(datas[0][5:7])
@@ -107,7 +107,7 @@ def Baixar_diarios(ano, datas, cadernos, quantidade):
 	options.add_argument('--ignore-certificate-errors')
 	options.add_argument("--window-size=1920x1800")
 	options.add_experimental_option('excludeSwitches', ['enable-logging'])
-	driver = webdriver.Chrome(executable_path = chromedriver_path, options=options)
+	driver = webdriver.Chrome(executable_path = '.\software\chromedriver.exe' , options=options)
 	ua = UserAgent()
 
 
@@ -154,6 +154,15 @@ def ler_json(url,ano):
 	
 	# itera sobre essa lista no JSON coletando os nomes dos documentos, data de publicação e link 
 	for n in list_itens:
+
+		## parte alternativa em caso de erro, comentar depois
+		# numero_cad = n["numero"]
+		# # print(numero_cad)
+		# if numero_cad > 9260:
+		# 	pass 
+		# else:
+		
+		# fim da parte alternativa	
 		cadernos = []
 		date_list = [] 
 		list_docs = n["documentos"]
@@ -162,6 +171,8 @@ def ler_json(url,ano):
 			date_list.append(data)
 			if int(ano) < 2015:
 				caderno = str(docs['enderecoCaderno'])
+				if len(str(caderno)) < 7:
+					caderno = str(docs['enderecoPublicacao'])	
 			else:
 				caderno = str(docs['enderecoPublicacao'])
 			cadernos.append(caderno)
