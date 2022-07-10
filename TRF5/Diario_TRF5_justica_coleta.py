@@ -26,6 +26,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+import random
 
 
 
@@ -41,24 +42,24 @@ def downloads_done(path_final):
 		if cont == 1 or desist == 4:  # limite de 3 documentos ou 4 tentativas
 			break
 		else:
-			print("aguardando 6 seg") # 15 segundos para cada tentativa
+			print("aguardando 7 seg") # 15 segundos para cada tentativa
 			print("-----")
-			time.sleep(6)
+			time.sleep(7)
 			cont = 0
-			total = os.listdir(path_final) # lista os donwloads em andamento
+			# total = os.listdir(path_final) # lista os donwloads em andamento
 			
-			if len(total) == 0: # se nada estiver sendo baixado, cancela o processo.
-				cont = 1
-			else:
-				for i in os.listdir(path_final):
-					nome = str(i)
-					if "crdown" not in nome and nome[-3:] == "pdf":  # confere os downloads finalizados
-						cont = cont+1
-						
-				desist = desist + 1 # conta as tentativas
+			# if len(total) == 0: # se nada estiver sendo baixado, cancela o processo.
+			# 	cont = 1
+			# else:
+			for i in os.listdir(path_final):
+				nome = str(i)
+				if "crdown" not in nome and nome[-3:] == "pdf":  # confere os downloads finalizados
+					cont = cont+1
+					
+			# desist = desist + 1 # conta as tentativas
 
-				print("Ainda falta(m)", 1-cont,"arquivos")
-				print("---------------")
+			print("Ainda falta(m)", 1-cont,"arquivos")
+			print("---------------")
 					
 	print("downloads finalizados")
 	return
@@ -71,7 +72,7 @@ def Baixar_diarios(ano):
 
 	# separa o ano e cria o diretório, caso não exista
 	dir_path = str(os.path.dirname(os.path.realpath(__file__)))
-	path = dir_path + f'\Diarios_TRF5_provisorio'
+	path = dir_path + f'\Diarios_TRF5_provisorio'+str(ano)
 	Path(path).mkdir(parents=True, exist_ok=True)
     
 	chromedriver_path = Path(str(Path(__file__).parent.resolve()) + '\software\chromedriver.exe')
@@ -90,9 +91,15 @@ def Baixar_diarios(ano):
 	time.sleep(4)
 	html_source = driver.page_source
 
-	meses = ['01','02','03','04','05','06','07','08','09','10','11','12']
+	# meses = ['01','02','03','04','05','06','07','08','09','10','11','12']
+	meses = ['01','02','03','04']
+	# meses = ['02']
 	tribunais = ['5','80','81','82','83','84','85']
+	# meses = ['10']
+	# tribunais = ['84','85']
 	nomes_tribunais =["TRF5","AL","CE","PB","PE","RN","SE"]
+	# nomes_tribunais =["RN","SE"]
+	
 	cadernos = ['1']
 	
 	for mes in meses:
@@ -131,7 +138,7 @@ def Baixar_diarios(ano):
 				    time.sleep(1)
 				    form_mes = Select(driver.find_element_by_xpath('//*[@id="frmVisao:meses"]'))
 				    form_mes.select_by_value(mes)
-				    time.sleep(1)
+				    time.sleep(2)
 				    driver.find_elements_by_xpath('//*[@id="frmVisao:j_id48"]')[0].click()
 				    try:
 				        Select(driver.find_elements_by_xpath('//*[@id="frmPesquisa:quantidadeRegistros"]')[0]).select_by_value('100')
@@ -165,13 +172,20 @@ def Baixar_diarios(ano):
 				        	# verifica se o download acabou
 				        	downloads_done(path)
 				        	# move o arquivo para o diretório da data
+				        	
 				        	for i in os.listdir(path):
 				        		nome = str(i)
 				        		if nome[-3:] == "pdf":  # confere os downloads finalizados
 				        			source = os.path.join(path, nome)
-				        			nome_final = os.path.join(path,nome_tribunal+"_"+ano+'_'+data_ajus+".pdf")
-				        			os.rename(source,nome_final)
-				        			shutil.move(nome_final,path_final)
+				        			try:
+				        				nome_final = os.path.join(path,nome_tribunal+"_"+ano+'_'+data_ajus+".pdf")
+				        				os.rename(source,nome_final)
+				        				shutil.move(nome_final,path_final)
+				        			except:
+				        				n = random.randint(0,5000)
+				        				nome_final_n = os.path.join(path,nome_tribunal+"_"+ano+'_'+data_ajus+"_"+str(n)+".pdf")
+				        				os.rename(nome_final,nome_final_n)
+				        				shutil.move(nome_final_n,path_final)
 				        	time.sleep(4)
 				        	print("                ---------------------------")		
                             
