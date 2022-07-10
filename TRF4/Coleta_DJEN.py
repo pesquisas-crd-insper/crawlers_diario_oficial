@@ -88,7 +88,7 @@ def ler_json(url,n):
 	df_textos_paginas["tipo_publicacao"] = None
 
 	df_textos_paginas = df_textos_paginas[["numero_processo", "estado","publicacao","numeros_paginas","tipos_processuais","assuntos","comarcas",
-			"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao"]]
+			"representantes","dia", "mes","ano","nome_documento","nomes_pastas","data_decisao","orgao_julgador","tipo_publicacao","tribunal"]]
 
 	return df_textos_paginas
 
