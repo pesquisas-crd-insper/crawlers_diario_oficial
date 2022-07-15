@@ -29,10 +29,95 @@ import fitz
 
 
 
+def colet_2015_2020(ano):
+
+	dir_path = str(os.path.dirname(os.path.realpath(__file__)))
+	
+	if int(ano) == 2015:
+		inicio = 0
+		fim = 0
+	elif int(ano) == 2016:
+		inicio = 11
+		fim = 27
+	elif int(ano) == 2017:
+		inicio = 0
+		fim = 0
+	elif int(ano) == 2018:
+		inicio = 0
+		fim = 0
+	elif int(ano) == 2019:
+		inicio = 0
+		fim = 0
+	elif int(ano) == 2020:
+		inicio = 0
+		fim = 0
+
+	for k in range(inicio,fim):
+		url = 'https://sistemas.trf1.jus.br/edj/discover?rpp=100&etal=0&query={}&scope=123/1&group_by=none&page={}&sort_by=dc.date.issued_dt&order=asc&filtertype_0=title&filtertype_1=title&filter_relational_operator_1=contains&filter_relational_operator_0=contains&filter_1=&filter_0='.format(ano,k)
+		response = urllib.request.urlopen(url)
+		soup = BeautifulSoup(response, 'html.parser')
+		base = 'https://sistemas.trf1.jus.br'
+		# print(soup)
+
+
+		for link in soup.find_all('a', attrs={'href': re.compile("edj/handle/123")}):
+			text_link = link.get_text()
+			if "dici" in text_link and str(ano) in text_link:
+				print("-------------")
+				print(text_link)
+			# 	print("-----------------------")
+			# else:
+			# 	pass
+				nome_link = link.get('href')
+				link_final = base+nome_link
+
+				textos = text_link.split(" ")
+
+				estado = textos[3].replace("SJ","")
+				itens_data = textos[-1].split("-")
+
+
+				data_ajust = str(itens_data[2])+"-"+itens_data[1]+"-"+itens_data[0]
+
+				
+				print()
+				print(estado)
+				print(data_ajust)
+				print(link_final)
+				print()
+				# print("-------------")
+
+				response_2 = urllib.request.urlopen(link_final)
+				soup_2 = BeautifulSoup(response_2, 'html.parser')
+				count = 0
+
+				base_2 = 'https://sistemas.trf1.jus.br'
+				for link_2 in soup_2.find_all('a'):
+					nome_link_pdf = link_2.get('href')
+					if ".pdf" in str(nome_link_pdf) and count == 0:
+						print(nome_link_pdf)
+						count = 1
+
+						partes = nome_link_pdf.split("/")
+						nome_arquivo, nada = partes[-1].split('.pdf')
+
+						link_final_pdf = base_2+nome_link_pdf
+						
+						path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(itens_data[0])+'\\'+str(data_ajust)
+						Path(path_final).mkdir(parents=True, exist_ok=True)
+
+						response_3 = urllib.request.urlopen(link_final_pdf, timeout = 30)
+						file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
+						file.write(response_3.read())
+						time.sleep(2)
+						file.close()
+				print("-------------")		
+
+
 
 def colet_2020_adiante(ano):
 
-	regex_estado = re.compile("(?i)AC|AP|AM|BA|DF|GO|MA|MT|MG|PA|PI|RO|RR|TO|TRF")
+	regex_estado = re.compile(r"AC|AP|AM|BA|DF|GO|MA|MT|MG|PA|PI|RO|RR|TO|TRF")
 
 	# separa o ano e cria o diretório, caso não exista
 	dir_path = str(os.path.dirname(os.path.realpath(__file__)))
@@ -45,179 +130,106 @@ def colet_2020_adiante(ano):
 	soup = BeautifulSoup(response, 'html.parser')
 
 
-	for link in soup.find_all('a'):
-		if "Caderno" in str(link):
+	cont = 0
+	for link in soup.find_all('a', attrs={'href': re.compile("derno")}):
+		print("estamos no link",cont)
+		texto = link.get_text()
+		if str(ano) in texto and "ditais" not in texto:
+			print("-------------")
+			print(texto)
+			partes_txt = texto.split(" ")
+			for item in partes_txt:
+				if re.search(r"\/",item):
+					data_ajust = item.replace("/","-")
+			
 			nome_link = link.get('href')
-			# print(nome_link)
 			partes = nome_link.split("/")
 			nome_arquivo = partes[-1]
 			nome_parseado = nome_arquivo.split("_")
-			for item in nome_parseado:
-				if re.search(regex_estado,item):
-					estado = item
-				else:
-					if re.search("-",item):
-						data = item
-			itens_data = data.split("-")
+			for part in nome_parseado:
+				if re.search(regex_estado,part):
+					estado = part
 
-			if itens_data[0] == ano and "EDT" not in str(link):
-				data_ajust = str(itens_data[2])+"-"+itens_data[1]+"-"+itens_data[0]
-				print("-------------")
-				print()
-				print(data_ajust)
-				print(nome_arquivo)
-				print()
-				print("-------------")
-				path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(itens_data[0])+'\\'+str(data_ajust)
-				Path(path_final).mkdir(parents=True, exist_ok=True)
-				link_ajust = nome_link.replace("../../..", "https://portal.trf1.jus.br")
-				
-				response_2 = urllib.request.urlopen(link_ajust, timeout = 30)
-				file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
-				file.write(response_2.read())
-				time.sleep(2)
-				file.close()	
-			# z= input("")
+			# print("-------------")
+			print()
+			print(estado)
+			print(data_ajust)
+			print(nome_arquivo)
+			print()
+			print("-------------")
+			path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(ano)+'\\'+str(data_ajust)
+			Path(path_final).mkdir(parents=True, exist_ok=True)		
+			link_ajust = nome_link.replace("../../..", "https://portal.trf1.jus.br")
 
-
-def colet_2015_2020(ano):
-
-	regex_estado = re.compile("(?i)AC|AP|AM|BA|DF|GO|MA|MT|MG|PA|PI|RO|RR|TO|TRF")
-	dir_path = str(os.path.dirname(os.path.realpath(__file__)))
-
-	for k in range(1252,26653):
-		url = 'https://sistemas.trf1.jus.br/edj/handle/123/'+str(k)
-		print("--------------------")
-		print()
-		print(url)
-		try:
-			response = urllib.request.urlopen(url)
-			soup = BeautifulSoup(response, 'html.parser')
-			# print(soup)
-			# z = input("")
-			base = 'https://sistemas.trf1.jus.br'
-			count = 0
-			for link in soup.find_all('a'):
-				nome_link = link.get('href')
-				if "Caderno" in str(nome_link) and count == 0 and ano in str(nome_link):
-					print(nome_link)
-					count = 1
-					# z= input("")
-					link_final = base+nome_link
-					partes = nome_link.split("/")
-					nome_arquivo, nada = partes[-1].split('.pdf')
-					nome_parseado = nome_arquivo.split("_")
-					for item in nome_parseado:
-						if re.search(regex_estado,item):
-							estado = item
-						else:
-							if re.search("-",item):
-								data = item
-					itens_data = data.split("-")
-					data_ajust = str(itens_data[2])+"-"+itens_data[1]+"-"+itens_data[0]
-
-					if "JUD" in nome_arquivo:
-						print("-------------")
-						print()
-						print(data_ajust)
-						print(nome_arquivo)
-						print()
-						print("-------------")
-						path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(itens_data[0])+'\\'+str(data_ajust)
-						Path(path_final).mkdir(parents=True, exist_ok=True)
-											
-						response_2 = urllib.request.urlopen(link_final, timeout = 30)
-						file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
-						file.write(response_2.read())
-						time.sleep(2)
-						file.close()
-				# else:
-					# print("link que não remete ao documento ou que não pertence ao ano buscado")
-		except:
-			pass
-			# print("não possui link válido")
-
-
-def gerar_numeros(ano):
-
-    anos_todos = ["2009","2010","2011","2012","2013","2014","2015"]
-   
-    linha = anos_todos.index(ano)
-    arq = open('ANOS.txt', 'r') # abre o range das edições do ano escolhido pelo usuário no arquivo TXT
-    linhas = arq.readlines() # lê o arquivo
-    inic_fim = linhas[linha].split('-') # seleciona a linha do ano respectivo
-
-    
-    lista_num =[] #lista com os números do range do ano
-    inicio = int(inic_fim[0])  # documento inicial disponível
-    fim = int(inic_fim[1])# documento final disponível
-
-    return inicio, fim
-
+			response_2 = urllib.request.urlopen(link_ajust, timeout = 30)
+			file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
+			file.write(response_2.read())
+			time.sleep(2)
+			file.close()
+		cont = cont+1
 
 
 def colet_2009_2015(ano):
 
 	dir_path = str(os.path.dirname(os.path.realpath(__file__)))
-
-	# 163378 primeiro diário de 2009
-	# 163512 último de 2009
-	# 163767 último de 2010
-	# 164016 último de 2011
-	# 164267 último de 2012
-	# 164496 último de 2013
-	# 164749 último de 2014
-	# 164802 último de 2015
-
-	inicio, fim = gerar_numeros(ano)
-
-
-	for k in range(inicio,fim+1):
-		url = 'https://portal.trf1.jus.br/dspace/handle/123/'+str(k)
-		print("--------------------")
-		print()
-		print(url)
-		# try:
+	
+	for k in range(0,601,100):
+		# print(k)
+		url = 'https://portal.trf1.jus.br/dspace/simple-search?query=&filter_field_1=dateIssued&filter_type_1=equals&filter_value_1={}&sort_by=score&simple-search-type=null&custom-query=null&order=desc&rpp=100&etal=0&start={}'.format(ano,k)
 		response = urllib.request.urlopen(url)
 		soup = BeautifulSoup(response, 'html.parser')
-		# print(soup)
-		# z = input("")
 		base = 'https://portal.trf1.jus.br'
-		count = 0
-		for link in soup.find_all('a'):
-			nome_link = link.get('href')
-			if ".pdf" in str(nome_link) and count == 0 and ano in str(nome_link):
-				print(nome_link)
-				count = 1
+		# print(soup)
+
+
+		for link in soup.find_all('a', attrs={'href': re.compile("dspace/handle/123")}):
+			text_link = link.get_text()
+			if str(ano) in text_link and "iário" in text_link:
+				print("-------------")
+				print(text_link)
+			# 	print("-----------------------")
+			# else:
+			# 	pass
+				nome_link = link.get('href')
 				link_final = base+nome_link
 				# print(link_final)
-				partes = nome_link.split("/")
-				nome_arquivo, nada = partes[-1].split('.pdf')
-				nome_parseado = nome_arquivo.split("_")
-				itens_data =[]
-				for item in nome_parseado:
-					if re.search(r'[a-zA-Z]',item) == None:
-						itens_data.append(item)
-				# print(itens_data)
-				estado = "TRF"	
-				
-				
-				data_ajust = str(itens_data[2])+"-"+itens_data[1]+"-"+itens_data[0]
-				print("-------------")
-				print()
-				print(data_ajust)
-				print(nome_arquivo)
-				print()
-				print("-------------")
-				path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(itens_data[0])+'\\'+str(data_ajust)
-				Path(path_final).mkdir(parents=True, exist_ok=True)
-									
-				response_2 = urllib.request.urlopen(link_final, timeout = 30)
-				file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
-				file.write(response_2.read())
-				time.sleep(2)
-				file.close()
+				textos = text_link.split(" ")
 
+				estado = "TRF"
+				data_ajust = textos[-1].replace("/","-")
+				
+				print()
+				print(estado)
+				print(data_ajust)
+				print(link_final)
+				print()
+				# print("-------------")
+
+				response_2 = urllib.request.urlopen(link_final)
+				soup_2 = BeautifulSoup(response_2, 'html.parser')
+				count = 0
+
+				base_2 = 'https://portal.trf1.jus.br'
+				for link_2 in soup_2.find_all('a'):
+					nome_link_pdf = link_2.get('href')
+					if ".pdf" in str(nome_link_pdf) and count == 0:
+						print(nome_link_pdf)
+						count = 1
+
+						partes = nome_link_pdf.split("/")
+						nome_arquivo, nada = partes[-1].split('.pdf')
+
+						link_final_pdf = base_2+nome_link_pdf
+						
+						path_final = dir_path + f'\Diarios_TRF1_'+str(estado)+"_"+str(ano)+'\\'+str(data_ajust)
+						Path(path_final).mkdir(parents=True, exist_ok=True)
+
+						response_3 = urllib.request.urlopen(link_final_pdf, timeout = 30)
+						file = open(path_final+"/"+nome_arquivo+".pdf", "wb")
+						file.write(response_3.read())
+						time.sleep(2)
+						file.close()
+				print("-------------")
 
 
 
@@ -227,7 +239,7 @@ def Baixar_diarios(ano):
 		colet_2020_adiante(ano)
 	elif int(ano) == 2020:
 		colet_2020_adiante(ano)
-		colet_2015_2020(ano)
+		colet_2015_2020()
 	elif 2015 < int(ano) < 2020:
 		colet_2015_2020(ano)
 	elif int(ano) == 2015:
