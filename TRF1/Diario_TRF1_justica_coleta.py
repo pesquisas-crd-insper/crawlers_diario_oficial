@@ -35,22 +35,22 @@ def colet_2015_2020(ano):
 	
 	if int(ano) == 2015:
 		inicio = 0
-		fim = 0
+		fim = 34
 	elif int(ano) == 2016:
 		inicio = 11
-		fim = 27
+		fim = 50
 	elif int(ano) == 2017:
-		inicio = 0
-		fim = 0
+		inicio = 14
+		fim = 55
 	elif int(ano) == 2018:
-		inicio = 0
-		fim = 0
+		inicio = 111
+		fim = 151
 	elif int(ano) == 2019:
-		inicio = 0
-		fim = 0
+		inicio = 23
+		fim = 66
 	elif int(ano) == 2020:
-		inicio = 0
-		fim = 0
+		inicio = 28
+		fim = 65
 
 	for k in range(inicio,fim):
 		url = 'https://sistemas.trf1.jus.br/edj/discover?rpp=100&etal=0&query={}&scope=123/1&group_by=none&page={}&sort_by=dc.date.issued_dt&order=asc&filtertype_0=title&filtertype_1=title&filter_relational_operator_1=contains&filter_relational_operator_0=contains&filter_1=&filter_0='.format(ano,k)
